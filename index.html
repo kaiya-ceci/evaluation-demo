@@ -227,7 +227,7 @@
       elComment.value = catData.comment ?? "";
     } catch (err) {
       console.error(err);
-      setStatus("讀取既有分數失敗（請看 Console）", false);
+      setStatus("讀取失敗：Firestore 權限不足（Missing or insufficient permissions）", false);
     }
   }
 
