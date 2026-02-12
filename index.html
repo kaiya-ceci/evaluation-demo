@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>評分系統 Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background: #f4f6f9;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    select, input, button {
+      margin-top: 10px;
+      padding: 8px;
+      width: 100%;
+    }
+    button {
+      background: #0078d4;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005a9e;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>評分系統 Demo</h2>
+
+  <label>選擇分類</label>
+  <select>
+    <option>化糞池處理</option>
+    <option>接管流程與期限</option>
+    <option>施工與技術</option>
+    <option>費用與補助</option>
+    <option>政策與法規</option>
+  </select>
+
+  <label>內容正確性 (0-50)</label>
+  <input type="number" min="0" max="50">
+
+  <label>語意完整性 (0-50)</label>
+  <input type="number" min="0" max="50">
+
+  <label>評語</label>
+  <input type="text">
+
+  <button onclick="alert('已送出（目前尚未儲存資料）')">
+    儲存本類結果
+  </button>
+</div>
+
+</body>
+</html>
