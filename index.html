@@ -25,8 +25,40 @@
 
 <h2>外部評分（互動骨架版）</h2>
 
+<h3 style="margin-top:10px;">評分者基本資料</h3>
+
+<div class="grid2" style="margin-top: 8px;">
+  <div>
+    <div class="label">科室（必選）</div>
+    <select id="dept" style="width:100%;">
+      <option value="">請選擇</option>
+      <option value="高階主管">高階主管</option>
+      <option value="污水工程科">污水工程科</option>
+      <option value="污水設施科">污水設施科</option>
+      <option value="污水營運科">污水營運科</option>
+    </select>
+  </div>
+  <div>
+    <div class="label">職稱（必填）</div>
+    <input id="title" type="text" placeholder="例如：工程司" style="width:100%;" />
+  </div>
+</div>
+
+<div style="margin-top: 10px;">
+  <div class="label">姓名（必填）</div>
+  <input id="name" type="text" placeholder="例如：王小明" style="width:100%;" />
+</div>
+
+<div style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
+  <button id="btnStart" type="button">開始評分</button>
+  <span class="hint">三項填完才可開始</span>
+</div>
+
+<hr style="margin: 14px 0; border:0; border-top:1px solid #eee;" />
+
 <div class="label">分類</div>
 <select id="category"></select>
+
 
 <div class="row" style="margin-top: 12px;">
   <div class="col left">
@@ -72,7 +104,9 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, serverTimestamp } 
+    from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
 
   // ✅ 你的 Firebase 設定
   const firebaseConfig = {
@@ -145,7 +179,59 @@
   const elScoreB = document.getElementById("scoreB");
   const elComment = document.getElementById("comment");
   const elStatus = document.getElementById("status");
+  const elDept = document.getElementById("dept");
+  const elTitle = document.getElementById("title");
+  const elName = document.getElementById("name");
+  const elBtnStart = document.getElementById("btnStart");
 
+  function setScoringEnabled(enabled) {
+    elCat.disabled = !enabled;
+    document.getElementById("btnSave").disabled = !enabled;
+    document.getElementById("btnClear").disabled = !enabled;
+    elScoreA.disabled = !enabled;
+    elScoreB.disabled = !enabled;
+    elComment.disabled = !enabled;
+  }
+  
+  function validateRaterInfo() {
+    const dept = elDept.value.trim();
+    const title = elTitle.value.trim();
+    const name = elName.value.trim();
+  
+    if (!dept) return { ok:false, msg:"請先選擇科室" };
+    if (!title) return { ok:false, msg:"請先填寫職稱" };
+    if (!name) return { ok:false, msg:"請先填寫姓名" };
+  
+    return { ok:true, dept, title, name };
+  }
+
+
+
+  async function loadCategoryInputs() {
+    // 預設清空
+    elScoreA.value = "";
+    elScoreB.value = "";
+    elComment.value = "";
+  
+    try {
+      const snap = await getDoc(doc(db, "scores", EVAL_ID));
+      if (!snap.exists()) return;
+  
+      const data = snap.data();
+      const catData = data?.categories?.[currentCategory];
+      if (!catData) return;
+  
+      // 帶回既有資料
+      elScoreA.value = (catData.scoreA ?? "") === null ? "" : (catData.scoreA ?? "");
+      elScoreB.value = (catData.scoreB ?? "") === null ? "" : (catData.scoreB ?? "");
+      elComment.value = catData.comment ?? "";
+    } catch (err) {
+      console.error(err);
+      setStatus("讀取既有分數失敗（請看 Console）", false);
+    }
+  }
+
+    
   function setStatus(msg, ok=true) {
     elStatus.innerHTML = ok ? `<span style="color:green;">✅ ${msg}</span>` : `<span style="color:#b91c1c;">❌ ${msg}</span>`;
   }
@@ -194,50 +280,78 @@
   }
 
   // --- 事件 ---
-  elCat.addEventListener("change", () => {
+  elCat.addEventListener("change", async () => {
     currentCategory = elCat.value;
     currentQuestion = QUESTIONS[currentCategory][0];
     renderQuestionList();
     renderQuestionContent();
-    clearInputs();
-    setStatus("已切換分類（輸入已清空）", true);
+  
+    await loadCategoryInputs(); // ✅ 改成載入本分類已存的分數/評語
+    setStatus("已切換分類（已載入本分類分數/評語）", true);
   });
 
   document.getElementById("btnClear").addEventListener("click", () => {
     clearInputs();
     setStatus("已清空本題輸入", true);
   });
-
-  document.getElementById("btnSave").addEventListener("click", async () => {
-    if (!currentQuestion) {
-      setStatus("沒有選到題目", false);
-      return;
-    }
-    const v = validateScores();
+  elBtnStart.addEventListener("click", async () => {
+    const v = validateRaterInfo();
     if (!v.ok) {
       setStatus(v.msg, false);
       return;
     }
+  
+    try {
+      await setDoc(doc(db, "scores", EVAL_ID), {
+        evalId: EVAL_ID,
+        rater: {
+          dept: v.dept,
+          title: v.title,
+          name: v.name
+        },
+        raterReady: true,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+  
+      setScoringEnabled(true);
+      setStatus("已確認基本資料，可以開始評分", true);
+    } catch (err) {
+      console.error(err);
+      setStatus("寫入基本資料失敗，請看 Console", false);
+    }
+  });
+
+
+  document.getElementById("btnSave").addEventListener("click", async () => {
+        const r = validateRaterInfo();
+        if (!r.ok) { setStatus("請先完成科室/職稱/姓名，按「開始評分」", false); return; }
+    
+        if (!currentQuestion) {
+          setStatus("沒有選到題目", false);
+          return;
+        }
+        const v = validateScores();
+        if (!v.ok) {
+          setStatus(v.msg, false);
+          return;
+        }
 
     try {
-      const catKey = CATEGORY_KEYS[currentCategory];
-    
+         
       await setDoc(doc(db, "scores", EVAL_ID), {
         evalId: EVAL_ID,
         updatedAt: serverTimestamp(),
-    
-        // 👇 這些會寫到 categories.xxx 底下
-        [`categories.${catKey}.category`]: currentCategory,
-        [`categories.${catKey}.questionId`]: currentQuestion.id,
-        [`categories.${catKey}.questionText`]: currentQuestion.q,
-        [`categories.${catKey}.answerRef`]: currentQuestion.a,
-        [`categories.${catKey}.scoreA`]: v.a,
-        [`categories.${catKey}.scoreB`]: v.b,
-        [`categories.${catKey}.comment`]: elComment.value || "",
-        [`categories.${catKey}.updatedAt`]: serverTimestamp()
-    
+      
+        categories: {
+          [currentCategory]: {
+            scoreA: v.a,                    // 0~50 或 null（你現在允許空白）
+            scoreB: v.b,                    // 0~50 或 null
+            comment: elComment.value || "",
+            updatedAt: serverTimestamp()
+          }
+        }
       }, { merge: true });
-
+      
 
 
       setStatus("已儲存（已寫入 Firestore）", true);
@@ -248,10 +362,14 @@
   });
 
   // --- 初始化 ---
+  setScoringEnabled(false);  // ✅ 一進來先鎖
   renderCategoryOptions();
   renderQuestionList();
   renderQuestionContent();
-  setStatus("已載入（先用假資料）", true);
+  await loadCategoryInputs();
+  setStatus("請先填科室/職稱/姓名，按「開始評分」後再評分", true);
+
+  
 
 </script>
 </body>
