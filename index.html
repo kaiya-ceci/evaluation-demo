@@ -314,6 +314,7 @@
       }, { merge: true });
   
       setScoringEnabled(true);
+      await loadCategoryInputs();
       setStatus("已確認基本資料，可以開始評分", true);
     } catch (err) {
       console.error(err);
