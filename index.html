@@ -120,7 +120,9 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-  const EVAL_ID = "demo-eval-001"; // 先寫死：之後再換成真的同一人/同一場次 id
+  import { addDoc, collection } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+  let EVAL_ID = null;
+
 
 
   // ✅ 分類（這一定要是「陣列」）
@@ -296,24 +298,27 @@
     }
   
     try {
-      await setDoc(doc(db, "scores", EVAL_ID), {
-        evalId: EVAL_ID,
+      const docRef = await addDoc(collection(db, "scores"), {
         rater: {
           dept: v.dept,
           title: v.title,
           name: v.name
         },
-        raterReady: true,
+        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      }, { merge: true });
+      });
+  
+      EVAL_ID = docRef.id; // 🔥 這一行是關鍵
   
       setScoringEnabled(true);
-      setStatus("已確認基本資料，可以開始評分", true);
+      setStatus("已建立新的評分紀錄，可以開始評分", true);
+  
     } catch (err) {
       console.error(err);
-      setStatus("寫入基本資料失敗，請看 Console", false);
+      setStatus("建立評分紀錄失敗", false);
     }
   });
+
 
 
   document.getElementById("btnSave").addEventListener("click", async () => {
