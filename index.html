@@ -352,6 +352,7 @@
   
   try {
     await loadQuestions(); // ✅ 先把 200 題載進來
+    console.log("題庫分類 keys =", Object.keys(QUESTIONS));
   
     // ✅ 讓分類下拉用「你既有的 CATEGORIES 順序」，而不是 Object.keys 的隨機順序
     currentCategory = CATEGORIES[0];
