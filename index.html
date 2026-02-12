@@ -218,8 +218,16 @@
       if (!snap.exists()) return;
   
       const data = snap.data();
-      const catData = data?.categories?.[currentCategory] || data?.categories?.[CATEGORY_KEYS[currentCategory]];
-      if (!catData) return;
+      console.log("currentCategory =", currentCategory);
+      console.log("categories keys =", Object.keys(data?.categories || {}), data?.categories);
+      const catData = 
+        data?.categories?.[currentCategory] ||
+        data?.categories?.[CATEGORY_KEYS[currentCategory]];
+      
+      if (!catData) {
+        console.log("❗找不到這個分類的資料");
+        return;
+      }
   
       // 帶回既有資料
       elScoreA.value = (catData.scoreA ?? "") === null ? "" : (catData.scoreA ?? "");
