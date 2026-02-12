@@ -2,64 +2,52 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>評分系統 Demo</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 40px;
-      background: #f4f6f9;
-    }
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 600px;
-      margin: auto;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    select, input, button {
-      margin-top: 10px;
-      padding: 8px;
-      width: 100%;
-    }
-    button {
-      background: #0078d4;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #005a9e;
-    }
-  </style>
+  <title>Evaluation Demo</title>
 </head>
 <body>
 
-<div class="card">
-  <h2>評分系統 Demo</h2>
+<h2>外部評分測試</h2>
 
-  <label>選擇分類</label>
-  <select>
-    <option>化糞池處理</option>
-    <option>接管流程與期限</option>
-    <option>施工與技術</option>
-    <option>費用與補助</option>
-    <option>政策與法規</option>
-  </select>
+<select id="category">
+  <option value="A">分類 A</option>
+  <option value="B">分類 B</option>
+</select>
 
-  <label>內容正確性 (0-50)</label>
-  <input type="number" min="0" max="50">
+<br><br>
 
-  <label>語意完整性 (0-50)</label>
-  <input type="number" min="0" max="50">
+<button onclick="saveScore()">送出評分</button>
 
-  <label>評語</label>
-  <input type="text">
+<p id="status"></p>
 
-  <button onclick="alert('已送出（目前尚未儲存資料）')">
-    儲存本類結果
-  </button>
-</div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+  import { getFirestore, addDoc, collection } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBqSDWpIR_Bm2CVdnObkkuopOBrxgoXlH0",
+    authDomain: "tcswg-ai-qa.firebaseapp.com",
+    projectId: "tcswg-ai-qa"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.saveScore = async function () {
+    const category = document.getElementById("category").value;
+
+    try {
+      await addDoc(collection(db, "scores"), {
+        category: category,
+        timestamp: new Date()
+      });
+
+      document.getElementById("status").innerText = "✅ 成功寫入 Firestore";
+    } catch (error) {
+      document.getElementById("status").innerText = "❌ 寫入失敗";
+      console.error(error);
+    }
+  }
+</script>
 
 </body>
 </html>
