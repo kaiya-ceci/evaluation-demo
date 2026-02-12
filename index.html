@@ -149,7 +149,8 @@
 
   // --- UI 狀態 ---
   let currentCategory = CATEGORIES[0];
-  let currentQuestion = QUESTIONS[currentCategory][0];
+  let currentQuestion = null;  // ✅ 先不要碰 QUESTIONS
+
 
   const elCat = document.getElementById("category");
   const elList = document.getElementById("qList");
