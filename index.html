@@ -1,28 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>Evaluation Demo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>外部評分骨架</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; margin: 16px; }
+    .row { display: flex; gap: 16px; align-items: flex-start; }
+    .col { border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
+    .left { width: 45%; min-width: 320px; }
+    .right { width: 55%; min-width: 360px; }
+    select, input, textarea, button { font-size: 14px; padding: 8px; }
+    textarea { width: 100%; min-height: 90px; }
+    .qitem { padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+    .qitem:hover { background: #fafafa; }
+    .qitem.active { border-color: #4f46e5; background: #eef2ff; }
+    .label { font-size: 12px; color: #555; margin-top: 10px; margin-bottom: 4px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .hint { color: #666; font-size: 12px; margin-top: 8px; }
+    .status { margin-top: 10px; }
+  </style>
 </head>
 <body>
 
-<h2>外部評分測試</h2>
+<h2>外部評分（互動骨架版）</h2>
 
-<select id="category">
-  <option value="A">分類 A</option>
-  <option value="B">分類 B</option>
-</select>
+<div class="label">分類</div>
+<select id="category"></select>
 
-<br><br>
+<div class="row" style="margin-top: 12px;">
+  <div class="col left">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <strong>題目清單</strong>
+      <span class="hint">先用假資料</span>
+    </div>
+    <div id="qList" style="margin-top: 10px;"></div>
+  </div>
 
-<button onclick="saveScore()">送出評分</button>
+  <div class="col right">
+    <strong>題目內容</strong>
 
-<p id="status"></p>
+    <div class="label">題目</div>
+    <div id="qText" style="white-space: pre-wrap; border:1px solid #eee; border-radius:8px; padding:10px; min-height:60px;"></div>
+
+    <div class="label">答案（供評分者參考）</div>
+    <div id="aText" style="white-space: pre-wrap; border:1px solid #eee; border-radius:8px; padding:10px; min-height:60px;"></div>
+
+    <div class="grid2">
+      <div>
+        <div class="label">內容正確性 A（0~50）</div>
+        <input id="scoreA" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
+      </div>
+      <div>
+        <div class="label">語意完整性 B（0~50）</div>
+        <input id="scoreB" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
+      </div>
+    </div>
+
+    <div class="label">本類評語（可空白）</div>
+    <textarea id="comment" placeholder="可留空"></textarea>
+
+    <div style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
+      <button id="btnSave">儲存本類結果</button>
+      <button id="btnClear" type="button">清空本題輸入</button>
+    </div>
+
+    <div class="status" id="status"></div>
+    <div class="hint">目前儲存是「每按一次就新增一筆」：只是先驗證互動與寫入。下一步再改成「同一人同一筆更新」。</div>
+  </div>
+</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getFirestore, addDoc, collection } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+  import { getFirestore, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
+  // ✅ 你的 Firebase 設定
   const firebaseConfig = {
     apiKey: "AIzaSyBqSDWpIR_Bm2CVdnObkkuopOBrxgoXlH0",
     authDomain: "tcswg-ai-qa.firebaseapp.com",
@@ -32,22 +84,155 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  window.saveScore = async function () {
-    const category = document.getElementById("category").value;
+  // ✅ 分類（你提供的 5 類）
+  const CATEGORIES = [
+    "化糞池處理",
+    "接管流程與期限",
+    "施工與技術",
+    "費用與補助",
+    "政策與法規"
+  ];
+
+  // ✅ 假題目資料：每類 3 題（之後用 200 題資料取代這裡）
+  const QUESTIONS = {
+    "化糞池處理": [
+      { id: "Q1-1", q: "（示範）化糞池多久需要抽肥？", a: "依使用狀況與容量，通常建議定期委外清除，並依主管機關規定辦理。" },
+      { id: "Q1-2", q: "（示範）化糞池清除後汙泥去哪？", a: "應交由合法清運/處理單位處理，不得任意排放。" },
+      { id: "Q1-3", q: "（示範）化糞池可否直接改接下水道？", a: "需依接管規定與施工程序辦理，並配合現勘與申請。" }
+    ],
+    "接管流程與期限": [
+      { id: "Q2-1", q: "（示範）申請接管的流程？", a: "通常包含申請、現勘、設計/施工、驗收等階段（依地方規定為準）。" },
+      { id: "Q2-2", q: "（示範）接管期程大概多久？", a: "視案件量與現場條件而定，可能數週至數月。" },
+      { id: "Q2-3", q: "（示範）一定要接嗎？", a: "依政策與法規及主管機關公告範圍規定。" }
+    ],
+    "施工與技術": [
+      { id: "Q3-1", q: "（示範）施工會開挖多久？", a: "視路段、管線複雜度與工序而定。" },
+      { id: "Q3-2", q: "（示範）遇到障礙物怎麼處理？", a: "依現勘與設計調整，必要時採替代工法或改線。" },
+      { id: "Q3-3", q: "（示範）施工影響動線？", a: "通常會公告、交維與分段施工降低影響。" }
+    ],
+    "費用與補助": [
+      { id: "Q4-1", q: "（示範）接管費用誰出？", a: "依補助方案與申請資格，有些項目可申請補助或減免。" },
+      { id: "Q4-2", q: "（示範）有哪些補助？", a: "依地方政府公告與年度計畫為準。" },
+      { id: "Q4-3", q: "（示範）不配合會罰嗎？", a: "依相關法規規定及主管機關裁處。" }
+    ],
+    "政策與法規": [
+      { id: "Q5-1", q: "（示範）哪些區域是強制接管？", a: "依主管機關公告接管範圍與法規要求。" },
+      { id: "Q5-2", q: "（示範）法源依據有哪些？", a: "依污水下水道相關法規、地方自治條例與公告為準。" },
+      { id: "Q5-3", q: "（示範）民眾權益與申訴管道？", a: "可向主管機關洽詢或依申訴流程辦理。" }
+    ]
+  };
+
+  // --- UI 狀態 ---
+  let currentCategory = CATEGORIES[0];
+  let currentQuestion = QUESTIONS[currentCategory][0];
+
+  const elCat = document.getElementById("category");
+  const elList = document.getElementById("qList");
+  const elQ = document.getElementById("qText");
+  const elA = document.getElementById("aText");
+  const elScoreA = document.getElementById("scoreA");
+  const elScoreB = document.getElementById("scoreB");
+  const elComment = document.getElementById("comment");
+  const elStatus = document.getElementById("status");
+
+  function setStatus(msg, ok=true) {
+    elStatus.innerHTML = ok ? `<span style="color:green;">✅ ${msg}</span>` : `<span style="color:#b91c1c;">❌ ${msg}</span>`;
+  }
+
+  function renderCategoryOptions() {
+    elCat.innerHTML = CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("");
+    elCat.value = currentCategory;
+  }
+
+  function renderQuestionList() {
+    const qs = QUESTIONS[currentCategory] || [];
+    elList.innerHTML = "";
+    qs.forEach(q => {
+      const div = document.createElement("div");
+      div.className = "qitem" + (q.id === currentQuestion?.id ? " active" : "");
+      div.innerHTML = `<div><strong>${q.id}</strong></div><div style="margin-top:4px; white-space:pre-wrap;">${q.q}</div>`;
+      div.onclick = () => {
+        currentQuestion = q;
+        renderQuestionList();
+        renderQuestionContent();
+        setStatus("已切換題目（尚未儲存）", true);
+      };
+      elList.appendChild(div);
+    });
+  }
+
+  function renderQuestionContent() {
+    elQ.textContent = currentQuestion?.q || "";
+    elA.textContent = currentQuestion?.a || "";
+  }
+
+  function clearInputs() {
+    elScoreA.value = "";
+    elScoreB.value = "";
+    elComment.value = "";
+  }
+
+  function validateScores() {
+    // 允許空白先不管，互動骨架先跑通；下一步再加嚴格規則
+    const a = elScoreA.value === "" ? null : Number(elScoreA.value);
+    const b = elScoreB.value === "" ? null : Number(elScoreB.value);
+
+    if (a !== null && (Number.isNaN(a) || a < 0 || a > 50)) return { ok:false, msg:"A 必須是 0~50" };
+    if (b !== null && (Number.isNaN(b) || b < 0 || b > 50)) return { ok:false, msg:"B 必須是 0~50" };
+    return { ok:true, a, b };
+  }
+
+  // --- 事件 ---
+  elCat.addEventListener("change", () => {
+    currentCategory = elCat.value;
+    currentQuestion = QUESTIONS[currentCategory][0];
+    renderQuestionList();
+    renderQuestionContent();
+    clearInputs();
+    setStatus("已切換分類（輸入已清空）", true);
+  });
+
+  document.getElementById("btnClear").addEventListener("click", () => {
+    clearInputs();
+    setStatus("已清空本題輸入", true);
+  });
+
+  document.getElementById("btnSave").addEventListener("click", async () => {
+    if (!currentQuestion) {
+      setStatus("沒有選到題目", false);
+      return;
+    }
+    const v = validateScores();
+    if (!v.ok) {
+      setStatus(v.msg, false);
+      return;
+    }
 
     try {
       await addDoc(collection(db, "scores"), {
-        category: category,
-        timestamp: new Date()
+        category: currentCategory,
+        questionId: currentQuestion.id,
+        questionText: currentQuestion.q,
+        answerRef: currentQuestion.a,
+        scoreA: v.a,         // 目前允許 null
+        scoreB: v.b,         // 目前允許 null
+        comment: elComment.value || "",
+        createdAt: serverTimestamp()
       });
 
-      document.getElementById("status").innerText = "✅ 成功寫入 Firestore";
-    } catch (error) {
-      document.getElementById("status").innerText = "❌ 寫入失敗";
-      console.error(error);
+      setStatus("已儲存（已寫入 Firestore）", true);
+    } catch (err) {
+      console.error(err);
+      setStatus("寫入失敗，請看 Console", false);
     }
-  }
-</script>
+  });
 
+  // --- 初始化 ---
+  renderCategoryOptions();
+  renderQuestionList();
+  renderQuestionContent();
+  setStatus("已載入（先用假資料）", true);
+
+</script>
 </body>
 </html>
