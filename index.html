@@ -72,7 +72,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getFirestore, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
   // ✅ 你的 Firebase 設定
   const firebaseConfig = {
@@ -83,6 +83,8 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const EVAL_ID = "demo-eval-001"; // 先寫死：之後再換成真的同一人/同一場次 id
+
 
   // ✅ 分類（你提供的 5 類）
   const CATEGORIES = [
@@ -209,16 +211,19 @@
     }
 
     try {
-      await addDoc(collection(db, "scores"), {
+      await setDoc(doc(db, "scores", EVAL_ID), {
+        evalId: EVAL_ID,
+        // 先把你原本的內容照存（下一步才會拆欄位）
         category: currentCategory,
         questionId: currentQuestion.id,
         questionText: currentQuestion.q,
         answerRef: currentQuestion.a,
-        scoreA: v.a,         // 目前允許 null
-        scoreB: v.b,         // 目前允許 null
+        scoreA: v.a,
+        scoreB: v.b,
         comment: elComment.value || "",
-        createdAt: serverTimestamp()
-      });
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
 
       setStatus("已儲存（已寫入 Firestore）", true);
     } catch (err) {
