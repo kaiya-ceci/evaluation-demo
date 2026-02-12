@@ -138,34 +138,14 @@
     "政策與法規": "policy"
   };
 
-  // ✅ 假題目資料：每類 3 題（之後用 200 題資料取代這裡）
-  const QUESTIONS = {
-    "化糞池處理": [
-      { id: "Q1-1", q: "（示範）化糞池多久需要抽肥？", a: "依使用狀況與容量，通常建議定期委外清除，並依主管機關規定辦理。" },
-      { id: "Q1-2", q: "（示範）化糞池清除後汙泥去哪？", a: "應交由合法清運/處理單位處理，不得任意排放。" },
-      { id: "Q1-3", q: "（示範）化糞池可否直接改接下水道？", a: "需依接管規定與施工程序辦理，並配合現勘與申請。" }
-    ],
-    "接管流程與期限": [
-      { id: "Q2-1", q: "（示範）申請接管的流程？", a: "通常包含申請、現勘、設計/施工、驗收等階段（依地方規定為準）。" },
-      { id: "Q2-2", q: "（示範）接管期程大概多久？", a: "視案件量與現場條件而定，可能數週至數月。" },
-      { id: "Q2-3", q: "（示範）一定要接嗎？", a: "依政策與法規及主管機關公告範圍規定。" }
-    ],
-    "施工與技術": [
-      { id: "Q3-1", q: "（示範）施工會開挖多久？", a: "視路段、管線複雜度與工序而定。" },
-      { id: "Q3-2", q: "（示範）遇到障礙物怎麼處理？", a: "依現勘與設計調整，必要時採替代工法或改線。" },
-      { id: "Q3-3", q: "（示範）施工影響動線？", a: "通常會公告、交維與分段施工降低影響。" }
-    ],
-    "費用與補助": [
-      { id: "Q4-1", q: "（示範）接管費用誰出？", a: "依補助方案與申請資格，有些項目可申請補助或減免。" },
-      { id: "Q4-2", q: "（示範）有哪些補助？", a: "依地方政府公告與年度計畫為準。" },
-      { id: "Q4-3", q: "（示範）不配合會罰嗎？", a: "依相關法規規定及主管機關裁處。" }
-    ],
-    "政策與法規": [
-      { id: "Q5-1", q: "（示範）哪些區域是強制接管？", a: "依主管機關公告接管範圍與法規要求。" },
-      { id: "Q5-2", q: "（示範）法源依據有哪些？", a: "依污水下水道相關法規、地方自治條例與公告為準。" },
-      { id: "Q5-3", q: "（示範）民眾權益與申訴管道？", a: "可向主管機關洽詢或依申訴流程辦理。" }
-    ]
-  };
+  let QUESTIONS = {};
+
+  async function loadQuestions() {
+    const res = await fetch("./questions.json");
+    if (!res.ok) throw new Error("讀取 questions.json 失敗");
+    QUESTIONS = await res.json();
+  }
+
 
   // --- UI 狀態 ---
   let currentCategory = CATEGORIES[0];
@@ -268,7 +248,7 @@
 
   function renderQuestionContent() {
     elQ.textContent = currentQuestion?.q || "";
-    elA.textContent = currentQuestion?.a || "";
+    elA.textContent = currentQuestion?.aShort || "";
   }
 
   function clearInputs() {
@@ -368,11 +348,25 @@
 
   // --- 初始化 ---
   setScoringEnabled(false);  // ✅ 一進來先鎖
-  renderCategoryOptions();
-  renderQuestionList();
-  renderQuestionContent();
-  await loadCategoryInputs();
-  setStatus("請先填科室/職稱/姓名，按「開始評分」後再評分", true);
+  
+  try {
+    await loadQuestions(); // ✅ 先把 200 題載進來
+  
+    // ✅ 讓分類下拉用「你既有的 CATEGORIES 順序」，而不是 Object.keys 的隨機順序
+    currentCategory = CATEGORIES[0];
+    currentQuestion = (QUESTIONS[currentCategory] && QUESTIONS[currentCategory][0]) ? QUESTIONS[currentCategory][0] : null;
+  
+    renderCategoryOptions();
+    renderQuestionList();
+    renderQuestionContent();
+  
+    // ❌ 初始化時先不要 loadCategoryInputs（因為還沒按開始評分）
+    setStatus("題庫已載入。請先填科室/職稱/姓名，按「開始評分」後再評分", true);
+  } catch (err) {
+    console.error(err);
+    setStatus("題庫載入失敗：請確認 questions.json 路徑與是否有上傳到 GitHub", false);
+  }
+
 
   
 
