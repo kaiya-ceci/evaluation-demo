@@ -218,7 +218,7 @@
       if (!snap.exists()) return;
   
       const data = snap.data();
-      const catData = data?.categories?.[currentCategory];
+      const catData = data?.categories?.[currentCategory] || data?.categories?.[CATEGORY_KEYS[currentCategory]];
       if (!catData) return;
   
       // 帶回既有資料
@@ -227,7 +227,7 @@
       elComment.value = catData.comment ?? "";
     } catch (err) {
       console.error(err);
-      setStatus("讀取失敗：Firestore 權限不足（Missing or insufficient permissions）", false);
+      setStatus("讀取既有分數失敗（請看 Console）", false);
     }
   }
 
@@ -314,7 +314,6 @@
       }, { merge: true });
   
       setScoringEnabled(true);
-      await loadCategoryInputs();
       setStatus("已確認基本資料，可以開始評分", true);
     } catch (err) {
       console.error(err);
