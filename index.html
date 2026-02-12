@@ -87,13 +87,13 @@
 
 
   // ✅ 分類（你提供的 5 類）
-  const CATEGORIES = [
-    "化糞池處理",
-    "接管流程與期限",
-    "施工與技術",
-    "費用與補助",
-    "政策與法規"
-  ];
+  const CATEGORY_KEYS = {
+    "化糞池處理": "septic",
+    "接管流程與期限": "connection",
+    "施工與技術": "construction",
+    "費用與補助": "subsidy",
+    "政策與法規": "policy"
+  };
 
   // ✅ 假題目資料：每類 3 題（之後用 200 題資料取代這裡）
   const QUESTIONS = {
@@ -211,18 +211,24 @@
     }
 
     try {
+      const catKey = CATEGORY_KEYS[currentCategory];
+    
       await setDoc(doc(db, "scores", EVAL_ID), {
         evalId: EVAL_ID,
-        // 先把你原本的內容照存（下一步才會拆欄位）
-        category: currentCategory,
-        questionId: currentQuestion.id,
-        questionText: currentQuestion.q,
-        answerRef: currentQuestion.a,
-        scoreA: v.a,
-        scoreB: v.b,
-        comment: elComment.value || "",
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+    
+        // 👇 這些會寫到 categories.xxx 底下
+        [`categories.${catKey}.category`]: currentCategory,
+        [`categories.${catKey}.questionId`]: currentQuestion.id,
+        [`categories.${catKey}.questionText`]: currentQuestion.q,
+        [`categories.${catKey}.answerRef`]: currentQuestion.a,
+        [`categories.${catKey}.scoreA`]: v.a,
+        [`categories.${catKey}.scoreB`]: v.b,
+        [`categories.${catKey}.comment`]: elComment.value || "",
+        [`categories.${catKey}.updatedAt`]: serverTimestamp()
+    
       }, { merge: true });
+
 
 
       setStatus("已儲存（已寫入 Firestore）", true);
