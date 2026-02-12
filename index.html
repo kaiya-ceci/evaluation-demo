@@ -104,7 +104,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, serverTimestamp } 
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp } 
     from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 
@@ -346,18 +346,16 @@
 
     try {
          
-      await setDoc(doc(db, "scores", EVAL_ID), {
-        evalId: EVAL_ID,
+      await updateDoc(doc(db, "scores", EVAL_ID), {
         updatedAt: serverTimestamp(),
-      
-        // ✅ 用欄位路徑寫入，不會覆蓋整個 categories
         [`categories.${currentCategory}`]: {
           scoreA: v.a,
           scoreB: v.b,
           comment: elComment.value || "",
           updatedAt: serverTimestamp()
         }
-      }, { merge: true });
+      });
+
       
 
 
