@@ -343,13 +343,12 @@
         evalId: EVAL_ID,
         updatedAt: serverTimestamp(),
       
-        categories: {
-          [currentCategory]: {
-            scoreA: v.a,                    // 0~50 或 null（你現在允許空白）
-            scoreB: v.b,                    // 0~50 或 null
-            comment: elComment.value || "",
-            updatedAt: serverTimestamp()
-          }
+        // ✅ 用欄位路徑寫入，不會覆蓋整個 categories
+        [`categories.${currentCategory}`]: {
+          scoreA: v.a,
+          scoreB: v.b,
+          comment: elComment.value || "",
+          updatedAt: serverTimestamp()
         }
       }, { merge: true });
       
