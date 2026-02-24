@@ -19,6 +19,86 @@
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .hint { color: #666; font-size: 12px; margin-top: 8px; }
     .status { margin-top: 10px; }
+    /* 整體背景與版面 */
+    body {
+      background: #f6f7fb;
+      color: #111827;
+    }
+    h2 { margin-bottom: 10px; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; }
+    
+    /* 卡片質感 */
+    .col {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 6px 18px rgba(17, 24, 39, 0.06);
+    }
+    .left, .right { border-radius: 14px; }
+    
+    /* 左邊題目卡片更像清單 */
+    .qitem {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+    }
+    .qitem.active {
+      border-color: #6366f1;
+      background: #eef2ff;
+    }
+    
+    /* 小標題 */
+    .label {
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    /* 開始評分列 */
+    .startRow{
+      margin-top: 12px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .miniStatus{
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+    .miniStatus.ok{
+      background:#ecfdf5;
+      color:#047857;
+      border:1px solid #a7f3d0;
+    }
+    .miniStatus.bad{
+      background:#fef2f2;
+      color:#b91c1c;
+      border:1px solid #fecaca;
+    }
+    
+    /* 右側「本類評分」卡片 */
+    .scoreCard{
+      background:#f8fafc;
+      border:1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .scoreCardTitle{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-weight: 800;
+      color:#111827;
+    }
+    
+    /* 右下角 status 也稍微美化 */
+    .status{
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background:#fff;
+      border:1px solid #e5e7eb;
+    }
   </style>
 </head>
 <body>
@@ -49,9 +129,10 @@
   <input id="name" type="text" placeholder="例如：王小明" style="width:100%;" />
 </div>
 
-<div style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
+<div class="startRow">
   <button id="btnStart" type="button">開始評分</button>
-  <span class="hint">三項填完才可開始</span>
+  <span class="hint">基本資料填寫完成才可開始評分</span>
+  <span id="startStatus" class="miniStatus"></span>
 </div>
 
 <hr style="margin: 14px 0; border:0; border-top:1px solid #eee;" />
@@ -81,25 +162,31 @@
     <div id="aLongText" style="white-space: pre-wrap; border:1px solid #eee; border-radius:8px; padding:10px; min-height:90px;"></div>
 
 
-    <div class="grid2">
-      <div>
-        <div class="label">內容正確性 A（0~50）</div>
-        <input id="scoreA" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
+    <div class="scoreCard">
+      <div class="scoreCardTitle">
+        <span>本類評分</span>
+        <span class="hint">分類層級（不是每題）</span>
       </div>
-      <div>
-        <div class="label">語意完整性 B（0~50）</div>
-        <input id="scoreB" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
+    
+      <div class="grid2" style="margin-top:10px;">
+        <div>
+          <div class="label">內容正確性 A（0~50）</div>
+          <input id="scoreA" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
+        </div>
+        <div>
+          <div class="label">語意完整性 B（0~50）</div>
+          <input id="scoreB" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
+        </div>
+      </div>
+    
+      <div class="label">本類評語（可空白）</div>
+      <textarea id="comment" placeholder="可留空"></textarea>
+    
+      <div style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
+        <button id="btnSave">儲存本類結果</button>
+        <button id="btnClear" type="button">清空本題輸入</button>
       </div>
     </div>
-
-    <div class="label">本類評語（可空白）</div>
-    <textarea id="comment" placeholder="可留空"></textarea>
-
-    <div style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
-      <button id="btnSave">儲存本類結果</button>
-      <button id="btnClear" type="button">清空本題輸入</button>
-    </div>
-
     <div class="col" style="margin-top:12px; border-color:#eee;">
       <strong>本次評分總覽</strong>
       <div class="hint" id="progressText" style="margin-top:6px;">尚未開始</div>
@@ -199,6 +286,7 @@
   const elTotalScore = document.getElementById("totalScore");
   const elDoneCount = document.getElementById("doneCount");
   const elBtnSubmit = document.getElementById("btnSubmit");
+  const elStartStatus = document.getElementById("startStatus");
 
   function setScoringEnabled(enabled) {
     elCat.disabled = !enabled;
@@ -258,6 +346,11 @@
     
   function setStatus(msg, ok=true) {
     elStatus.innerHTML = ok ? `<span style="color:green;">✅ ${msg}</span>` : `<span style="color:#b91c1c;">❌ ${msg}</span>`;
+  }
+  function setStartStatus(msg, ok=true){
+    if (!elStartStatus) return;
+    elStartStatus.textContent = msg || "";
+    elStartStatus.className = "miniStatus " + (ok ? "ok" : "bad");
   }
 
   function renderCategoryOptions() {
@@ -389,9 +482,10 @@
   elBtnStart.addEventListener("click", async () => {
     const v = validateRaterInfo();
     if (!v.ok) {
-      setStatus(v.msg, false);
+      setStartStatus(v.msg, false);
       return;
     }
+    setStartStatus("基本資料 OK", true);
   
     try {
       const docRef = await addDoc(collection(db, "scores"), {
@@ -412,6 +506,7 @@
       await loadCategoryInputs();
       await refreshSummary();
       setStatus("已建立新的評分紀錄，可以開始評分", true);
+      setStartStatus("可以開始評分", true);
   
     } catch (err) {
       console.error(err);
