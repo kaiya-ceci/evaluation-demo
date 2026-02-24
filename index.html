@@ -351,6 +351,15 @@
       if (data.submitted === true) {
         elProgressText.textContent = "✅ 已送出（已鎖定）";
       }
+      // 🔥 更新分類下拉顯示完成狀態
+      elCat.innerHTML = CATEGORIES.map(cat => {
+        const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
+        const isDone = isCategoryComplete(cd);
+        const mark = isDone ? " ✅" : " ⚪";
+        return `<option value="${cat}">${cat}${mark}</option>`;
+      }).join("");
+      
+      elCat.value = currentCategory; // 保持原本選中的分類
     } catch (err) {
       console.error(err);
       setStatus("讀取總覽失敗（請看 Console）", false);
@@ -502,6 +511,16 @@
     console.error(err);
     setStatus("題庫載入失敗：請確認 questions.json 路徑與是否有上傳到 GitHub", false);
   }
+
+  window.addEventListener("beforeunload", async (e) => {
+    if (!EVAL_ID) return;
+  
+    const snap = await getDoc(doc(db, "scores", EVAL_ID));
+    if (snap.exists() && !snap.data().submitted) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
 
 
   
