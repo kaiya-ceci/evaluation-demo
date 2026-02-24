@@ -100,15 +100,37 @@
       <button id="btnClear" type="button">清空本題輸入</button>
     </div>
 
+    <div class="col" style="margin-top:12px; border-color:#eee;">
+      <strong>本次評分總覽</strong>
+      <div class="hint" id="progressText" style="margin-top:6px;">尚未開始</div>
+    
+      <div class="grid2" style="margin-top:10px;">
+        <div>
+          <div class="label">總分（A+B）</div>
+          <div id="totalScore" style="font-size:20px; font-weight:700;">-</div>
+        </div>
+        <div>
+          <div class="label">完成度</div>
+          <div id="doneCount" style="font-size:20px; font-weight:700;">0/5</div>
+        </div>
+      </div>
+    
+      <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+        <button id="btnSubmit" type="button">確認送出（完成後鎖定）</button>
+        <span class="hint">需五類皆填 A/B 才能送出</span>
+      </div>
+    </div>
+
     <div class="status" id="status"></div>
     <div class="hint">目前儲存是「每按一次就新增一筆」：只是先驗證互動與寫入。下一步再改成「同一人同一筆更新」。</div>
   </div>
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp } 
-    from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+  import { 
+    getFirestore, doc, getDoc, updateDoc, serverTimestamp, 
+    addDoc, collection 
+  } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 
   // ✅ 你的 Firebase 設定
@@ -119,8 +141,7 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  import { addDoc, collection } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+  const db = getFirestore(app);  
   let EVAL_ID = null;
 
 
@@ -170,6 +191,10 @@
   const elTitle = document.getElementById("title");
   const elName = document.getElementById("name");
   const elBtnStart = document.getElementById("btnStart");
+  const elProgressText = document.getElementById("progressText");
+  const elTotalScore = document.getElementById("totalScore");
+  const elDoneCount = document.getElementById("doneCount");
+  const elBtnSubmit = document.getElementById("btnSubmit");
 
   function setScoringEnabled(enabled) {
     elCat.disabled = !enabled;
@@ -274,7 +299,63 @@
     if (b !== null && (Number.isNaN(b) || b < 0 || b > 50)) return { ok:false, msg:"B 必須是 0~50" };
     return { ok:true, a, b };
   }
+  
+  function isCategoryComplete(catData) {
+    // 你要的規則：A、B 都必填，0~50
+    if (!catData) return false;
+    const a = catData.scoreA;
+    const b = catData.scoreB;
+    if (a === null || a === "" || typeof a === "undefined") return false;
+    if (b === null || b === "" || typeof b === "undefined") return false;
+    if (typeof a !== "number" || typeof b !== "number") return false;
+    if (a < 0 || a > 50 || b < 0 || b > 50) return false;
+    return true;
+  }
+  
+  async function refreshSummary() {
+    if (!EVAL_ID) {
+      elProgressText.textContent = "尚未建立評分紀錄";
+      elTotalScore.textContent = "-";
+      elDoneCount.textContent = "0/5";
+      elBtnSubmit.disabled = true;
+      return;
+    }
+  
+    try {
+      const snap = await getDoc(doc(db, "scores", EVAL_ID));
+      if (!snap.exists()) return;
+  
+      const data = snap.data();
+      const cats = data.categories || {};
+  
+      let done = 0;
+      let total = 0;
+  
+      for (const cat of CATEGORIES) {
+        const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
+        if (isCategoryComplete(cd)) {
+          done += 1;
+          total += (cd.scoreA + cd.scoreB);
+        }
+      }
+  
+      elDoneCount.textContent = `${done}/5`;
+      elTotalScore.textContent = done === 0 ? "-" : String(total);
+      elProgressText.textContent = done === 5
+        ? "✅ 五類皆完成，可以送出"
+        : `尚未完成：還差 ${5 - done} 類`;
+  
+      elBtnSubmit.disabled = (done !== 5) || (data.submitted === true);
+      if (data.submitted === true) {
+        elProgressText.textContent = "✅ 已送出（已鎖定）";
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("讀取總覽失敗（請看 Console）", false);
+    }
+  }
 
+  
   // --- 事件 ---
   elCat.addEventListener("change", async () => {
     currentCategory = elCat.value;
@@ -283,6 +364,7 @@
     renderQuestionContent();
   
     await loadCategoryInputs(); // ✅ 改成載入本分類已存的分數/評語
+    await refreshSummary();
     setStatus("已切換分類（已載入本分類分數/評語）", true);
   });
 
@@ -311,6 +393,8 @@
       EVAL_ID = docRef.id; // 🔥 這一行是關鍵
   
       setScoringEnabled(true);
+      await loadCategoryInputs();
+      await refreshSummary();
       setStatus("已建立新的評分紀錄，可以開始評分", true);
   
     } catch (err) {
@@ -346,14 +430,52 @@
           updatedAt: serverTimestamp()
         }
       });
-
       
-
-
+      await refreshSummary();
       setStatus("已儲存（已寫入 Firestore）", true);
     } catch (err) {
       console.error(err);
       setStatus("寫入失敗，請看 Console", false);
+    }
+  });
+  elBtnSubmit.addEventListener("click", async () => {
+    if (!EVAL_ID) { setStatus("尚未建立評分紀錄", false); return; }
+  
+    const ok = confirm("確認送出後將鎖定不可修改。確定要送出嗎？");
+    if (!ok) return;
+  
+    try {
+      const snap = await getDoc(doc(db, "scores", EVAL_ID));
+      const data = snap.data() || {};
+      const cats = data.categories || {};
+  
+      // 再算一次 total（避免前端狀態不一致）
+      let total = 0;
+      for (const cat of CATEGORIES) {
+        const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
+        if (!isCategoryComplete(cd)) {
+          setStatus("仍有分類未完成（A/B 必填）", false);
+          return;
+        }
+        total += (cd.scoreA + cd.scoreB);
+      }
+  
+      await updateDoc(doc(db, "scores", EVAL_ID), {
+        submitted: true,
+        totalScore: total,
+        submittedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+  
+      // 鎖定
+      setScoringEnabled(false);
+      elBtnSubmit.disabled = true;
+  
+      setStatus("✅ 已送出並鎖定", true);
+      await refreshSummary();
+    } catch (err) {
+      console.error(err);
+      setStatus("送出失敗（請看 Console）", false);
     }
   });
 
