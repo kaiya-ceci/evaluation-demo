@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>評分管理端</title>
+<style>
+  body { font-family: system-ui; margin:20px; }
+  table { border-collapse: collapse; width:100%; margin-top:15px; }
+  th, td { border:1px solid #ddd; padding:8px; font-size:14px; }
+  th { background:#f3f4f6; }
+  button { padding:8px 14px; font-size:14px; }
+</style>
+</head>
+<body>
+
+<h2>評分管理端</h2>
+
+<button id="btnExport">下載 CSV</button>
+
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>姓名</th>
+      <th>科室</th>
+      <th>職稱</th>
+      <th>化糞池處理</th>
+      <th>政策與法規</th>
+      <th>施工與技術</th>
+      <th>接管流程與期限</th>
+      <th>費用與補助</th>
+      <th>總分</th>
+      <th>送出時間</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script type="module">
+import { initializeApp } 
+  from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+
+import { 
+  getFirestore, collection, getDocs 
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBqSDWpIR_Bm2CVdnObkkuopOBrxgoXlH0",
+  authDomain: "tcswg-ai-qa.firebaseapp.com",
+  projectId: "tcswg-ai-qa"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const CATEGORIES = [
+  "化糞池處理",
+  "政策與法規",
+  "施工與技術",
+  "接管流程與期限",
+  "費用與補助"
+];
+
+const tableBody = document.querySelector("#dataTable tbody");
+const btnExport = document.getElementById("btnExport");
+
+let exportRows = [];
+
+async function loadData() {
+  const snap = await getDocs(collection(db, "scores"));
+
+  tableBody.innerHTML = "";
+  exportRows = [];
+
+  snap.forEach(docSnap => {
+    const data = docSnap.data();
+    if (!data.submitted) return; // 🔥 只抓已送出
+
+    const r = data.rater || {};
+    const cats = data.categories || {};
+
+    const row = {
+      name: r.name || "",
+      dept: r.dept || "",
+      title: r.title || "",
+      total: data.totalScore || 0,
+      time: data.submittedAt?.toDate?.().toLocaleString() || ""
+    };
+
+    CATEGORIES.forEach(cat => {
+      const cd = cats[cat];
+      row[cat] = cd ? (cd.scoreA + cd.scoreB) : "";
+    });
+
+    exportRows.push(row);
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.name}</td>
+      <td>${row.dept}</td>
+      <td>${row.title}</td>
+      <td>${row["化糞池處理"]}</td>
+      <td>${row["政策與法規"]}</td>
+      <td>${row["施工與技術"]}</td>
+      <td>${row["接管流程與期限"]}</td>
+      <td>${row["費用與補助"]}</td>
+      <td>${row.total}</td>
+      <td>${row.time}</td>
+    `;
+    tableBody.appendChild(tr);
+  });
+}
+
+btnExport.addEventListener("click", () => {
+  if (exportRows.length === 0) {
+    alert("沒有可匯出的資料");
+    return;
+  }
+
+  const headers = [
+    "姓名","科室","職稱",
+    "化糞池處理","政策與法規","施工與技術","接管流程與期","費用與補助",
+    "總分","送出時間"
+  ];
+
+  const rows = exportRows.map(r => [
+    r.name,
+    r.dept,
+    r.title,
+    r["化糞池處理"],
+    r["政策與法規"],
+    r["施工與技術"],
+    r["接管流程與期限"],
+    r["費用與補助"],
+    r.total,
+    r.time
+  ]);
+
+  const csvContent =
+    [headers, ...rows]
+      .map(e => e.map(v => `"${v ?? ""}"`).join(","))
+      .join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "評分匯出.csv";
+  a.click();
+});
+
+loadData();
+</script>
+
+</body>
+</html>
