@@ -127,11 +127,13 @@
 </div>
 
 <script type="module">
+ import { initializeApp } 
+  from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+
   import { 
-    getFirestore, doc, getDoc, updateDoc, serverTimestamp, 
+    getFirestore, doc, getDoc, updateDoc, serverTimestamp,
     addDoc, collection 
   } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-
 
   // ✅ 你的 Firebase 設定
   const firebaseConfig = {
