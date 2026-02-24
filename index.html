@@ -145,6 +145,8 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);  
   let EVAL_ID = null;
+  let hasUnsavedOrUnsubmittedWork = false;
+  let isSubmitted = false;
 
 
 
@@ -329,6 +331,7 @@
   
       const data = snap.data();
       const cats = data.categories || {};
+      isSubmitted = (data.submitted === true);
   
       let done = 0;
       let total = 0;
@@ -402,6 +405,8 @@
       });
   
       EVAL_ID = docRef.id; // 🔥 這一行是關鍵
+      hasUnsavedOrUnsubmittedWork = true;
+      isSubmitted = false;
   
       setScoringEnabled(true);
       await loadCategoryInputs();
@@ -444,6 +449,7 @@
       
       await refreshSummary();
       setStatus("已儲存（已寫入 Firestore）", true);
+      hasUnsavedOrUnsubmittedWork = true;
     } catch (err) {
       console.error(err);
       setStatus("寫入失敗，請看 Console", false);
@@ -477,6 +483,8 @@
         submittedAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
+      isSubmitted = true;
+      hasUnsavedOrUnsubmittedWork = false;
   
       // 鎖定
       setScoringEnabled(false);
@@ -512,16 +520,15 @@
     setStatus("題庫載入失敗：請確認 questions.json 路徑與是否有上傳到 GitHub", false);
   }
 
-  window.addEventListener("beforeunload", async (e) => {
-    if (!EVAL_ID) return;
+  window.addEventListener("beforeunload", (e) => {
+    if (!EVAL_ID) return;                 // 還沒開始評分不用擋
+    if (isSubmitted) return;              // 已送出不用擋
+    if (!hasUnsavedOrUnsubmittedWork) return;
   
-    const snap = await getDoc(doc(db, "scores", EVAL_ID));
-    if (snap.exists() && !snap.data().submitted) {
-      e.preventDefault();
-      e.returnValue = "";
-    }
+    e.preventDefault();
+    e.returnValue = ""; // 這行是觸發瀏覽器內建提示的關鍵
   });
-
+  
 
   
 
