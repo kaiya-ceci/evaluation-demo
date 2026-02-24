@@ -179,8 +179,11 @@
         </div>
       </div>
     
-      <div class="label">本類評語（可空白）</div>
-      <textarea id="comment" placeholder="可留空"></textarea>
+     <div class="label">本類評語（可空白，最多 200 字）</div>
+     <textarea id="comment" placeholder="可留空" maxlength="200"></textarea>
+     <div class="hint" style="text-align:right;">
+       <span id="commentCount">0</span>/200
+     </div>
     
       <div style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
         <button id="btnSave">儲存本類結果</button>
@@ -277,6 +280,7 @@
   const elScoreA = document.getElementById("scoreA");
   const elScoreB = document.getElementById("scoreB");
   const elComment = document.getElementById("comment");
+  const elCommentCount = document.getElementById("commentCount");
   const elStatus = document.getElementById("status");
   const elDept = document.getElementById("dept");
   const elTitle = document.getElementById("title");
@@ -337,6 +341,7 @@
       elScoreA.value = (catData.scoreA ?? "") === null ? "" : (catData.scoreA ?? "");
       elScoreB.value = (catData.scoreB ?? "") === null ? "" : (catData.scoreB ?? "");
       elComment.value = catData.comment ?? "";
+      updateCommentCount();
     } catch (err) {
       console.error(err);
       setStatus("讀取既有分數失敗（請看 Console）", false);
@@ -346,6 +351,11 @@
     
   function setStatus(msg, ok=true) {
     elStatus.innerHTML = ok ? `<span style="color:green;">✅ ${msg}</span>` : `<span style="color:#b91c1c;">❌ ${msg}</span>`;
+  }
+  function updateCommentCount() {
+    if (!elCommentCount) return;
+    const len = (elComment.value || "").length;
+    elCommentCount.textContent = String(len);
   }
   function setStartStatus(msg, ok=true){
     if (!elStartStatus) return;
@@ -385,6 +395,7 @@
     elScoreA.value = "";
     elScoreB.value = "";
     elComment.value = "";
+    updateCommentCount();
   }
 
   function validateScores() {
@@ -475,6 +486,14 @@
     setStatus("已切換分類（已載入本分類分數/評語）", true);
   });
 
+  elComment.addEventListener("input", () => {
+    // 保險：有些情況貼上可能超過 maxlength 或帶奇怪字元
+    if (elComment.value.length > 200) {
+      elComment.value = elComment.value.slice(0, 200);
+    }
+    updateCommentCount();
+  });
+  
   document.getElementById("btnClear").addEventListener("click", () => {
     clearInputs();
     setStatus("已清空本題輸入", true);
@@ -529,6 +548,11 @@
           setStatus(v.msg, false);
           return;
         }
+    const comment = (elComment.value || "").trim();
+    if (comment.length > 200) {
+      setStatus("評語最多 200 字", false);
+      return;
+    }
 
     try {
          
@@ -537,7 +561,7 @@
         [`categories.${currentCategory}`]: {
           scoreA: v.a,
           scoreB: v.b,
-          comment: elComment.value || "",
+          comment: comment,
           updatedAt: serverTimestamp()
         }
       });
