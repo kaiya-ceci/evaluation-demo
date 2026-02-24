@@ -112,15 +112,25 @@ async function loadData() {
         <td>${row["接管流程與期限"]}</td>
         <td>${row["費用與補助"]}</td>
 
-        <td style="white-space:pre-wrap;">${row["化糞池處理_comment"]}</td>
-        <td style="white-space:pre-wrap;">${row["政策與法規_comment"]}</td>
-        <td style="white-space:pre-wrap;">${row["施工與技術_comment"]}</td>
-        <td style="white-space:pre-wrap;">${row["接管流程與期限_comment"]}</td>
-        <td style="white-space:pre-wrap;">${row["費用與補助_comment"]}</td>
+        <td class="c1"></td>
+        <td class="c2"></td>
+        <td class="c3"></td>
+        <td class="c4"></td>
+        <td class="c5"></td>
 
         <td>${row.total}</td>
         <td>${row.time}</td>
       `;
+      tr.querySelector(".c1").textContent = row["化糞池處理_comment"] || "";
+      tr.querySelector(".c2").textContent = row["政策與法規_comment"] || "";
+      tr.querySelector(".c3").textContent = row["施工與技術_comment"] || "";
+      tr.querySelector(".c4").textContent = row["接管流程與期限_comment"] || "";
+      tr.querySelector(".c5").textContent = row["費用與補助_comment"] || "";
+      
+      // 讓換行顯示出來
+      tr.querySelectorAll(".c1,.c2,.c3,.c4,.c5").forEach(td => {
+        td.style.whiteSpace = "pre-wrap";
+      });
       tableBody.appendChild(tr);
     });
 
