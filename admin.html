@@ -29,6 +29,11 @@
       <th>施工與技術</th>
       <th>接管流程與期限</th>
       <th>費用與補助</th>
+      <th>化糞池處理評語</th>
+      <th>政策與法規評語</th>
+      <th>施工與技術評語</th>
+      <th>接管流程與期限評語</th>
+      <th>費用與補助評語</th>
       <th>總分</th>
       <th>送出時間</th>
     </tr>
@@ -90,6 +95,7 @@ async function loadData() {
     CATEGORIES.forEach(cat => {
       const cd = cats[cat];
       row[cat] = cd ? (cd.scoreA + cd.scoreB) : "";
+      row[cat + "_comment"] = cd?.comment ?? "";
     });
 
     exportRows.push(row);
@@ -104,6 +110,12 @@ async function loadData() {
       <td>${row["施工與技術"]}</td>
       <td>${row["接管流程與期限"]}</td>
       <td>${row["費用與補助"]}</td>
+      <td style="white-space:pre-wrap;">${row["化糞池處理_comment"]}</td>
+      <td style="white-space:pre-wrap;">${row["政策與法規_comment"]}</td>
+      <td style="white-space:pre-wrap;">${row["施工與技術_comment"]}</td>
+      <td style="white-space:pre-wrap;">${row["接管流程與期限_comment"]}</td>
+      <td style="white-space:pre-wrap;">${row["費用與補助_comment"]}</td>
+      
       <td>${row.total}</td>
       <td>${row.time}</td>
     `;
@@ -119,7 +131,8 @@ btnExport.addEventListener("click", () => {
 
   const headers = [
     "姓名","科室","職稱",
-    "化糞池處理","政策與法規","施工與技術","接管流程與期","費用與補助",
+    "化糞池處理","政策與法規","施工與技術","接管流程與期限","費用與補助",
+    "化糞池處理評語","政策與法規評語","施工與技術評語","接管流程與期限評語","費用與補助評語",
     "總分","送出時間"
   ];
 
@@ -132,14 +145,39 @@ btnExport.addEventListener("click", () => {
     r["施工與技術"],
     r["接管流程與期限"],
     r["費用與補助"],
+
+    r["化糞池處理_comment"],
+    r["政策與法規_comment"],
+    r["施工與技術_comment"],
+    r["接管流程與期限_comment"],
+    r["費用與補助_comment"],
+
     r.total,
     r.time
   ]);
 
-  const csvContent =
+  // ✅ 逃逸：避免評語內有引號/換行把 CSV 弄壞
+  const escapeCsv = (v) => {
+    const s = String(v ?? "");
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+
+  const csvBody =
     [headers, ...rows]
-      .map(e => e.map(v => `"${v ?? ""}"`).join(","))
+      .map(line => line.map(escapeCsv).join(","))
       .join("\n");
+
+  // ✅ Excel 亂碼解法：UTF-8 BOM
+  const csvWithBom = "\uFEFF" + csvBody;
+
+  const blob = new Blob([csvWithBom], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "評分匯出.csv";
+  a.click();
+});
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
