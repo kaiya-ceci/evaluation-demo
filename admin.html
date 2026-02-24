@@ -72,55 +72,68 @@ const btnExport = document.getElementById("btnExport");
 let exportRows = [];
 
 async function loadData() {
-  const snap = await getDocs(collection(db, "scores"));
+  try {
+    const snap = await getDocs(collection(db, "scores"));
 
-  tableBody.innerHTML = "";
-  exportRows = [];
+    tableBody.innerHTML = "";
+    exportRows = [];
 
-  snap.forEach(docSnap => {
-    const data = docSnap.data();
-    if (!data.submitted) return; // 🔥 只抓已送出
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.submitted !== true) return; // 只抓已送出
 
-    const r = data.rater || {};
-    const cats = data.categories || {};
+      const r = data.rater || {};
+      const cats = data.categories || {};
 
-    const row = {
-      name: r.name || "",
-      dept: r.dept || "",
-      title: r.title || "",
-      total: data.totalScore || 0,
-      time: data.submittedAt?.toDate?.().toLocaleString() || ""
-    };
+      const row = {
+        name: r.name || "",
+        dept: r.dept || "",
+        title: r.title || "",
+        total: data.totalScore ?? 0,
+        time: data.submittedAt?.toDate?.().toLocaleString() || ""
+      };
 
-    CATEGORIES.forEach(cat => {
-      const cd = cats[cat];
-      row[cat] = cd ? (cd.scoreA + cd.scoreB) : "";
-      row[cat + "_comment"] = cd?.comment ?? "";
+      CATEGORIES.forEach(cat => {
+        const cd = cats[cat];
+        row[cat] = cd ? ((cd.scoreA ?? 0) + (cd.scoreB ?? 0)) : "";
+        row[cat + "_comment"] = cd?.comment ?? "";
+      });
+
+      exportRows.push(row);
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row.name}</td>
+        <td>${row.dept}</td>
+        <td>${row.title}</td>
+        <td>${row["化糞池處理"]}</td>
+        <td>${row["政策與法規"]}</td>
+        <td>${row["施工與技術"]}</td>
+        <td>${row["接管流程與期限"]}</td>
+        <td>${row["費用與補助"]}</td>
+
+        <td style="white-space:pre-wrap;">${row["化糞池處理_comment"]}</td>
+        <td style="white-space:pre-wrap;">${row["政策與法規_comment"]}</td>
+        <td style="white-space:pre-wrap;">${row["施工與技術_comment"]}</td>
+        <td style="white-space:pre-wrap;">${row["接管流程與期限_comment"]}</td>
+        <td style="white-space:pre-wrap;">${row["費用與補助_comment"]}</td>
+
+        <td>${row.total}</td>
+        <td>${row.time}</td>
+      `;
+      tableBody.appendChild(tr);
     });
 
-    exportRows.push(row);
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${row.name}</td>
-      <td>${row.dept}</td>
-      <td>${row.title}</td>
-      <td>${row["化糞池處理"]}</td>
-      <td>${row["政策與法規"]}</td>
-      <td>${row["施工與技術"]}</td>
-      <td>${row["接管流程與期限"]}</td>
-      <td>${row["費用與補助"]}</td>
-      <td style="white-space:pre-wrap;">${row["化糞池處理_comment"]}</td>
-      <td style="white-space:pre-wrap;">${row["政策與法規_comment"]}</td>
-      <td style="white-space:pre-wrap;">${row["施工與技術_comment"]}</td>
-      <td style="white-space:pre-wrap;">${row["接管流程與期限_comment"]}</td>
-      <td style="white-space:pre-wrap;">${row["費用與補助_comment"]}</td>
-      
-      <td>${row.total}</td>
-      <td>${row.time}</td>
-    `;
-    tableBody.appendChild(tr);
-  });
+    // 沒資料時給提示
+    if (exportRows.length === 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="15" style="text-align:center;color:#666;">目前沒有「已送出」資料</td>`;
+      tableBody.appendChild(tr);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("讀取 Firestore 失敗，請看 Console");
+  }
 }
 
 btnExport.addEventListener("click", () => {
@@ -137,26 +150,12 @@ btnExport.addEventListener("click", () => {
   ];
 
   const rows = exportRows.map(r => [
-    r.name,
-    r.dept,
-    r.title,
-    r["化糞池處理"],
-    r["政策與法規"],
-    r["施工與技術"],
-    r["接管流程與期限"],
-    r["費用與補助"],
-
-    r["化糞池處理_comment"],
-    r["政策與法規_comment"],
-    r["施工與技術_comment"],
-    r["接管流程與期限_comment"],
-    r["費用與補助_comment"],
-
-    r.total,
-    r.time
+    r.name, r.dept, r.title,
+    r["化糞池處理"], r["政策與法規"], r["施工與技術"], r["接管流程與期限"], r["費用與補助"],
+    r["化糞池處理_comment"], r["政策與法規_comment"], r["施工與技術_comment"], r["接管流程與期限_comment"], r["費用與補助_comment"],
+    r.total, r.time
   ]);
 
-  // ✅ 逃逸：避免評語內有引號/換行把 CSV 弄壞
   const escapeCsv = (v) => {
     const s = String(v ?? "");
     return `"${s.replace(/"/g, '""')}"`;
@@ -167,7 +166,7 @@ btnExport.addEventListener("click", () => {
       .map(line => line.map(escapeCsv).join(","))
       .join("\n");
 
-  // ✅ Excel 亂碼解法：UTF-8 BOM
+  // Excel 亂碼：UTF-8 BOM
   const csvWithBom = "\uFEFF" + csvBody;
 
   const blob = new Blob([csvWithBom], { type: "text/csv;charset=utf-8;" });
@@ -177,15 +176,8 @@ btnExport.addEventListener("click", () => {
   a.href = url;
   a.download = "評分匯出.csv";
   a.click();
-});
 
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "評分匯出.csv";
-  a.click();
+  URL.revokeObjectURL(url);
 });
 
 loadData();
