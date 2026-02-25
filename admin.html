@@ -5,54 +5,60 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>臺中市水利局AI小幫手測試-評分結果瀏覽</title>
 <style>
-  body { font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; margin:20px; }
+  body { font-family: system-ui; margin:20px; }
+
+  /* 外層水平捲動 */
+  .tableWrap{
+    overflow:auto;
+    border:1px solid #e5e7eb;
+    border-radius:10px;
+    margin-top:15px;
+    max-height: 70vh; /* 讓你可以垂直捲動 */
+  }
+
+  table { border-collapse: collapse; width:max-content; min-width:100%; }
+  th, td { border:1px solid #ddd; padding:8px; font-size:14px; vertical-align: top; }
+  th { background:#f3f4f6; position: sticky; top: 0; z-index: 2; }
 
   button { padding:8px 14px; font-size:14px; }
-
-  /* ✅ 表格捲動容器（左右都可捲） */
-  .tableWrap{
-    margin-top:15px;
-    border:1px solid #ddd;
-    border-radius:10px;
-    overflow:auto;
-    max-height: 72vh;         /* ✅ 上下可捲 */
-    background:#fff;
-  }
-
-  table { border-collapse: collapse; width: max-content; min-width: 100%; }
-  th, td { border:1px solid #ddd; padding:8px; font-size:14px; vertical-align: top; }
-  th { background:#f3f4f6; white-space:nowrap; }
-
-  /* ✅ sticky 表頭 */
-  thead th{
-    position: sticky;
-    top: 0;
-    z-index: 2;
-  }
-
   th.sortable { cursor: pointer; user-select: none; }
   th.sortable:hover { background: #e5e7eb; }
 
-  /* 讓評語換行 */
-  td.pre { white-space: pre-wrap; min-width: 220px; }
+  /* 分類同色（淡底） */
+  .cat-septic  { background: #fff7ed; }
+  .cat-policy  { background: #f0f9ff; }
+  .cat-const   { background: #f5f3ff; }
+  .cat-conn    { background: #f0fdf4; }
+  .cat-subsidy { background: #fff1f2; }
 
-  /* 欄位稍微不要太擠 */
-  td, th { white-space: nowrap; }
-  td.pre { white-space: pre-wrap; }
+  /* 總分/時間 */
+  .cat-total   { background: #f9fafb; }
 
-  /* 小螢幕：登入框自動換行 */
-  @media (max-width: 600px) {
-    #loginBox .row { flex-direction: column; }
-    #loginBox input { width:100%; }
+  /* 評語換行 */
+  .prewrap { white-space: pre-wrap; }
+
+  /* 固定左三欄（可選，想要就留） */
+  th.stickyL, td.stickyL {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    background: #f3f4f6;
   }
+  th.stickyL2, td.stickyL2 { left: 90px; }   /* 依欄寬微調 */
+  th.stickyL3, td.stickyL3 { left: 220px; }  /* 依欄寬微調 */
+
+  /* 讓左三欄寬度固定好算 sticky */
+  .w-name { min-width:90px; }
+  .w-dept { min-width:130px; }
+  .w-title{ min-width:120px; }
 </style>
 </head>
 <body>
 
 <h2>臺中市水利局AI小幫手測試-評分結果瀏覽</h2>
 
-<div id="loginBox" style="margin:12px 0; padding:12px; border:1px solid #ddd; border-radius:8px; max-width:520px;">
-  <div class="row" style="display:flex; gap:8px; margin-bottom:8px;">
+<div id="loginBox" style="margin:12px 0; padding:12px; border:1px solid #ddd; border-radius:8px; max-width:420px;">
+  <div style="display:flex; gap:8px; margin-bottom:8px;">
     <input id="email" placeholder="Admin Email" style="flex:1; padding:8px;">
     <input id="password" placeholder="Password" type="password" style="flex:1; padding:8px;">
   </div>
@@ -61,10 +67,8 @@
   <span id="loginMsg" style="margin-left:8px; color:#666;"></span>
 </div>
 
-<div style="display:flex; gap:10px; align-items:center;">
-  <button id="btnExport" disabled>下載 CSV</button>
-  <button id="btnToggleAB" disabled>展開 A/B</button>
-</div>
+<button id="btnExport" disabled>下載 CSV</button>
+<button id="btnToggleAB" disabled>展開 A/B</button>
 
 <div class="tableWrap">
   <table id="dataTable">
@@ -77,7 +81,8 @@
 
 <script type="module">
 import {
-  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
+  setPersistence, inMemoryPersistence
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
 import { initializeApp }
@@ -98,6 +103,9 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+/** ✅ 重點：刷新就要重新登入 → 用 inMemoryPersistence */
+await setPersistence(auth, inMemoryPersistence);
+
 /** ========= DOM ========= */
 const tableBody = document.querySelector("#dataTable tbody");
 const headerRow = document.getElementById("headerRow");
@@ -109,13 +117,13 @@ const btnLogin = document.getElementById("btnLogin");
 const btnLogout = document.getElementById("btnLogout");
 const loginMsg = document.getElementById("loginMsg");
 
-/** ========= Data ========= */
-const CATEGORIES = [
-  "化糞池處理",
-  "政策與法規",
-  "施工與技術",
-  "接管流程與期限",
-  "費用與補助"
+/** ========= Categories meta ========= */
+const CAT_META = [
+  { name:"化糞池處理", cls:"cat-septic"  },
+  { name:"政策與法規", cls:"cat-policy"  },
+  { name:"施工與技術", cls:"cat-const"   },
+  { name:"接管流程與期限", cls:"cat-conn" },
+  { name:"費用與補助", cls:"cat-subsidy" }
 ];
 
 let exportRows = [];
@@ -123,52 +131,11 @@ let sortKey = null;
 let sortAsc = true;
 let showAB = false;
 
-/** ========= Helpers ========= */
-function td(text, preWrap = false) {
-  const cell = document.createElement("td");
-  cell.textContent = String(text ?? "");
-  if (preWrap) cell.classList.add("pre");
-  return cell;
-}
-
-function normalizeNumber(v) {
-  // 用來排序：null/"" 視為空
-  if (v === "" || v === null || typeof v === "undefined") return null;
-  const n = Number(v);
-  if (Number.isNaN(n)) return null;
-  return n;
-}
-
-function toMillis(v) {
-  // 支援：Date、timestamp-like、字串時間
-  if (!v) return null;
-
-  // Firestore Timestamp（你這邊已經 toLocaleString 了，但保險）
-  if (typeof v === "object" && typeof v.toDate === "function") {
-    return v.toDate().getTime();
-  }
-
-  if (v instanceof Date) return v.getTime();
-
-  // 若你存的是 "2026/2/25 上午11:29:15" 這種 toLocaleString
-  // 直接 Date.parse 可能吃不到，給一個 fallback：先用原字串 parse，失敗就 null
-  const t = Date.parse(v);
-  if (!Number.isNaN(t)) return t;
-
-  return null;
-}
-
-function colCountNow(){
-  // 3固定 + (AB?) + 5(A+B) + 5評語 + 2(總分/時間)
-  return 3 + (showAB ? CATEGORIES.length * 2 : 0) + CATEGORIES.length + CATEGORIES.length + 2;
-}
-
-/** ========= Auth ========= */
+/** ========= Auth UI ========= */
 btnLogin.addEventListener("click", async () => {
   loginMsg.textContent = "登入中…";
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
-
   try {
     await signInWithEmailAndPassword(auth, email, password);
   } catch (e) {
@@ -182,26 +149,13 @@ btnLogout.addEventListener("click", async () => {
 });
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) {
+  if (!user || user.isAnonymous || !user.email) {
     loginMsg.textContent = "尚未登入";
     btnLogin.style.display = "";
     btnLogout.style.display = "none";
     btnExport.disabled = true;
     btnToggleAB.disabled = true;
-    exportRows = [];
-    tableBody.innerHTML = "";
-    renderHeader();
-    return;
-  }
 
-  // 匿名或沒有 email → 不給看
-  if (user.isAnonymous || !user.email) {
-    await signOut(auth);
-    loginMsg.textContent = "請使用管理員 Email/Password 登入（不接受匿名登入）";
-    btnLogin.style.display = "";
-    btnLogout.style.display = "none";
-    btnExport.disabled = true;
-    btnToggleAB.disabled = true;
     exportRows = [];
     tableBody.innerHTML = "";
     renderHeader();
@@ -231,43 +185,40 @@ async function loadData() {
       const r = data.rater || {};
       const cats = data.categories || {};
 
-      // ✅ 另外存一個 timeMs 供排序（time 照舊顯示字串）
-      const submittedAt = data.submittedAt ?? null;
+      const ts = data.submittedAt?.toDate?.();
+      const timeStr = ts ? ts.toLocaleString() : "";
+      const timeMs = ts ? ts.getTime() : 0;
 
       const row = {
         name: r.name || "",
         dept: r.dept || "",
         title: r.title || "",
         total: data.totalScore ?? 0,
-        time: submittedAt?.toDate?.().toLocaleString?.() || "",
-        timeMs: submittedAt?.toDate?.().getTime?.() ?? null
+        time: timeStr,
+        timeMs
       };
 
-      CATEGORIES.forEach(cat => {
-        const cd = cats[cat];
+      CAT_META.forEach(({name}) => {
+        const cd = cats[name];
         const a = cd?.scoreA ?? null;
         const b = cd?.scoreB ?? null;
 
-        row[cat + "_A"] = a;
-        row[cat + "_B"] = b;
-        row[cat] = (a == null || b == null) ? "" : (a + b);
-        row[cat + "_comment"] = cd?.comment ?? "";
+        row[name + "_A"] = a;
+        row[name + "_B"] = b;
+        row[name + "_SUM"] = (a == null || b == null) ? "" : (a + b);
+        row[name + "_comment"] = cd?.comment ?? "";
       });
 
       exportRows.push(row);
     });
 
-    // 若之前有排序，重新載入後保留排序
-    if (sortKey) {
-      sortBy(sortKey, true); // silent
-    } else {
-      renderTable();
-      updateSortIcons();
-    }
+    renderTable();
+    updateSortIcons();
 
+    const colCount = 3 + CAT_META.length * (showAB ? 4 : 2) + 2;
     if (exportRows.length === 0) {
       tableBody.innerHTML =
-        `<tr><td colspan="${colCountNow()}" style="text-align:center;color:#666;">目前沒有「已送出」資料</td></tr>`;
+        `<tr><td colspan="${colCount}" style="text-align:center;color:#666;">目前沒有「已送出」資料</td></tr>`;
     }
   } catch (err) {
     console.error(err);
@@ -275,120 +226,108 @@ async function loadData() {
   }
 }
 
-/** ========= Header & Table ========= */
+/** ========= Helpers ========= */
+function td(text, { preWrap=false, cls="" } = {}) {
+  const cell = document.createElement("td");
+  cell.textContent = String(text ?? "");
+  if (preWrap) cell.classList.add("prewrap");
+  if (cls) cell.classList.add(cls);
+  return cell;
+}
+
+function th(text, { key=null, cls="", sticky=null, widthCls="" } = {}) {
+  const el = document.createElement("th");
+  el.textContent = text;
+  if (cls) el.classList.add(cls);
+  if (widthCls) el.classList.add(widthCls);
+
+  if (sticky === 1) el.classList.add("stickyL","w-name");
+  if (sticky === 2) el.classList.add("stickyL","stickyL2","w-dept");
+  if (sticky === 3) el.classList.add("stickyL","stickyL3","w-title");
+
+  if (key) {
+    el.classList.add("sortable");
+    el.dataset.key = key;
+    el.addEventListener("click", () => sortBy(key));
+  }
+  return el;
+}
+
+/** ========= Header ========= */
 function renderHeader() {
   headerRow.innerHTML = "";
 
-  const addTh = (text, key = null, type = "text") => {
-    const th = document.createElement("th");
-    th.textContent = text;
+  // 固定欄（也做排序可選；你要就打開 key）
+  headerRow.appendChild(th("姓名", { sticky:1 }));
+  headerRow.appendChild(th("科室", { sticky:2 }));
+  headerRow.appendChild(th("職稱", { sticky:3 }));
 
-    if (key) {
-      th.classList.add("sortable");
-      th.dataset.key = key;
-      th.dataset.type = type; // ✅ number / date / text
-      th.addEventListener("click", () => sortBy(key));
+  // 每一類：A、B、A+B、評語（同色、排一起）
+  CAT_META.forEach(({name, cls}) => {
+    if (showAB) {
+      headerRow.appendChild(th(`${name} A ↕`, { key: name + "_A", cls }));
+      headerRow.appendChild(th(`${name} B ↕`, { key: name + "_B", cls }));
     }
-    headerRow.appendChild(th);
-  };
+    headerRow.appendChild(th(`${name} A+B ↕`, { key: name + "_SUM", cls }));
+    headerRow.appendChild(th(`${name} 評語`, { cls })); // 評語不排序（你想排序我也可加）
+  });
 
-  // 固定欄（文字排序你要也可以給 key）
-  addTh("姓名 ↕", "name", "text");
-  addTh("科室 ↕", "dept", "text");
-  addTh("職稱 ↕", "title", "text");
-
-  // ✅ 展開 A/B（現在也可排序）
-  if (showAB) {
-    CATEGORIES.forEach(cat => {
-      addTh(`${cat} A ↕`, `${cat}_A`, "number");
-      addTh(`${cat} B ↕`, `${cat}_B`, "number");
-    });
-  }
-
-  // A+B 欄（可排序）
-  CATEGORIES.forEach(cat => addTh(`${cat} ↕`, cat, "number"));
-
-  // 評語（不排序）
-  CATEGORIES.forEach(cat => addTh(`${cat}評語`));
-
-  // 總分（數字排序）＆送出時間（日期排序）
-  addTh("總分 ↕", "total", "number");
-  addTh("送出時間 ↕", "timeMs", "date");
+  headerRow.appendChild(th("總分 ↕", { key:"total", cls:"cat-total" }));
+  headerRow.appendChild(th("送出時間 ↕", { key:"timeMs", cls:"cat-total" }));
 }
 
+/** ========= Table ========= */
 function renderTable() {
   tableBody.innerHTML = "";
 
   exportRows.forEach(row => {
     const tr = document.createElement("tr");
 
-    tr.appendChild(td(row.name));
-    tr.appendChild(td(row.dept));
-    tr.appendChild(td(row.title));
+    // 固定欄
+    const tdName = td(row.name, { cls:"w-name" }); tdName.classList.add("stickyL");
+    const tdDept = td(row.dept, { cls:"w-dept" }); tdDept.classList.add("stickyL","stickyL2");
+    const tdTitle= td(row.title,{ cls:"w-title"}); tdTitle.classList.add("stickyL","stickyL3");
+    tr.appendChild(tdName);
+    tr.appendChild(tdDept);
+    tr.appendChild(tdTitle);
 
-    if (showAB) {
-      CATEGORIES.forEach(cat => {
-        tr.appendChild(td(row[cat + "_A"] ?? ""));
-        tr.appendChild(td(row[cat + "_B"] ?? ""));
-      });
-    }
+    // 分類群組
+    CAT_META.forEach(({name, cls}) => {
+      if (showAB) {
+        tr.appendChild(td(row[name + "_A"] ?? "", { cls }));
+        tr.appendChild(td(row[name + "_B"] ?? "", { cls }));
+      }
+      tr.appendChild(td(row[name + "_SUM"] ?? "", { cls }));
+      tr.appendChild(td(row[name + "_comment"] ?? "", { cls, preWrap:true }));
+    });
 
-    CATEGORIES.forEach(cat => tr.appendChild(td(row[cat] ?? "")));
-
-    CATEGORIES.forEach(cat => tr.appendChild(td(row[cat + "_comment"] ?? "", true)));
-
-    tr.appendChild(td(row.total ?? ""));
-    tr.appendChild(td(row.time ?? ""));
+    tr.appendChild(td(row.total ?? "", { cls:"cat-total" }));
+    tr.appendChild(td(row.time ?? "", { cls:"cat-total" }));
 
     tableBody.appendChild(tr);
   });
 }
 
 /** ========= Sorting ========= */
-function sortBy(key, silent = false) {
-  if (!silent) {
-    if (sortKey === key) sortAsc = !sortAsc;
-    else { sortKey = key; sortAsc = true; }
-  } else {
-    // silent mode：不翻轉，只依現有 sortKey/sortAsc
-    if (!sortKey) sortKey = key;
-  }
-
-  // 找到這個 key 的型別（從 th 上拿）
-  const th = document.querySelector(`th.sortable[data-key="${CSS.escape(key)}"]`);
-  const type = th?.dataset?.type || "text";
+function sortBy(key) {
+  if (sortKey === key) sortAsc = !sortAsc;
+  else { sortKey = key; sortAsc = true; }
 
   exportRows.sort((a, b) => {
     const av = a[key];
     const bv = b[key];
 
-    // 空值永遠排最後
     const aEmpty = av === "" || av === null || typeof av === "undefined";
     const bEmpty = bv === "" || bv === null || typeof bv === "undefined";
     if (aEmpty && bEmpty) return 0;
     if (aEmpty) return 1;
     if (bEmpty) return -1;
 
-    let cmp = 0;
-
-    if (type === "number") {
-      const an = normalizeNumber(av);
-      const bn = normalizeNumber(bv);
-      if (an === null && bn === null) cmp = 0;
-      else if (an === null) cmp = 1;
-      else if (bn === null) cmp = -1;
-      else cmp = an - bn;
-    } else if (type === "date") {
-      const at = typeof av === "number" ? av : toMillis(av);
-      const bt = typeof bv === "number" ? bv : toMillis(bv);
-      if (at === null && bt === null) cmp = 0;
-      else if (at === null) cmp = 1;
-      else if (bt === null) cmp = -1;
-      else cmp = at - bt;
-    } else {
-      cmp = String(av).localeCompare(String(bv), "zh-Hant");
-    }
-
+    // timeMs / total / A / B / SUM 都是數字，直接比
+    const an = Number(av);
+    const bn = Number(bv);
+    const bothNum = !Number.isNaN(an) && !Number.isNaN(bn);
+    const cmp = bothNum ? (an - bn) : String(av).localeCompare(String(bv));
     return sortAsc ? cmp : -cmp;
   });
 
@@ -397,15 +336,13 @@ function sortBy(key, silent = false) {
 }
 
 function updateSortIcons() {
-  document.querySelectorAll("th.sortable").forEach(th => {
-    const key = th.dataset.key;
-    const baseText = th.getAttribute("data-label")
-      || th.textContent.replace(/[↑↓↕]\s*$/, "").trim();
+  document.querySelectorAll("th.sortable").forEach(thEl => {
+    const key = thEl.dataset.key;
+    const baseText = thEl.getAttribute("data-label") || thEl.textContent.replace(/[↑↓↕]\s*$/, "").trim();
+    thEl.setAttribute("data-label", baseText);
 
-    th.setAttribute("data-label", baseText);
-
-    if (key === sortKey) th.textContent = `${baseText} ${sortAsc ? "↑" : "↓"}`;
-    else th.textContent = `${baseText} ↕`;
+    if (key === sortKey) thEl.textContent = `${baseText} ${sortAsc ? "↑" : "↓"}`;
+    else thEl.textContent = `${baseText} ↕`;
   });
 }
 
@@ -413,16 +350,9 @@ function updateSortIcons() {
 btnToggleAB.addEventListener("click", () => {
   showAB = !showAB;
   btnToggleAB.textContent = showAB ? "收起 A/B" : "展開 A/B";
-
   renderHeader();
   renderTable();
   updateSortIcons();
-
-  // 沒資料時維持提示 colspan 正確
-  if (exportRows.length === 0) {
-    tableBody.innerHTML =
-      `<tr><td colspan="${colCountNow()}" style="text-align:center;color:#666;">目前沒有「已送出」資料</td></tr>`;
-  }
 });
 
 /** ========= CSV export ========= */
@@ -432,30 +362,24 @@ btnExport.addEventListener("click", () => {
     return;
   }
 
-  // ✅ CSV：永遠匯出 AB + (A+B)（不用依 showAB）
-  const headers = [
-    "姓名","科室","職稱",
-    "化糞池處理A","化糞池處理B",
-    "政策與法規A","政策與法規B",
-    "施工與技術A","施工與技術B",
-    "接管流程與期限A","接管流程與期限B",
-    "費用與補助A","費用與補助B",
-    "化糞池處理(A+B)","政策與法規(A+B)","施工與技術(A+B)","接管流程與期限(A+B)","費用與補助(A+B)",
-    "化糞池處理評語","政策與法規評語","施工與技術評語","接管流程與期限評語","費用與補助評語",
-    "總分","送出時間"
-  ];
+  const headers = ["姓名","科室","職稱"];
+  CAT_META.forEach(({name}) => {
+    if (showAB) {
+      headers.push(`${name}A`, `${name}B`);
+    }
+    headers.push(`${name}(A+B)`, `${name}評語`);
+  });
+  headers.push("總分","送出時間");
 
-  const rows = exportRows.map(r => ([
-    r.name, r.dept, r.title,
-    r["化糞池處理_A"] ?? "", r["化糞池處理_B"] ?? "",
-    r["政策與法規_A"] ?? "", r["政策與法規_B"] ?? "",
-    r["施工與技術_A"] ?? "", r["施工與技術_B"] ?? "",
-    r["接管流程與期限_A"] ?? "", r["接管流程與期限_B"] ?? "",
-    r["費用與補助_A"] ?? "", r["費用與補助_B"] ?? "",
-    r["化糞池處理"] ?? "", r["政策與法規"] ?? "", r["施工與技術"] ?? "", r["接管流程與期限"] ?? "", r["費用與補助"] ?? "",
-    r["化糞池處理_comment"] ?? "", r["政策與法規_comment"] ?? "", r["施工與技術_comment"] ?? "", r["接管流程與期限_comment"] ?? "", r["費用與補助_comment"] ?? "",
-    r.total ?? "", r.time ?? ""
-  ]));
+  const rows = exportRows.map(r => {
+    const line = [r.name, r.dept, r.title];
+    CAT_META.forEach(({name}) => {
+      if (showAB) line.push(r[name+"_A"] ?? "", r[name+"_B"] ?? "");
+      line.push(r[name+"_SUM"] ?? "", r[name+"_comment"] ?? "");
+    });
+    line.push(r.total ?? "", r.time ?? "");
+    return line;
+  });
 
   const escapeCsv = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const csvBody = [headers, ...rows].map(line => line.map(escapeCsv).join(",")).join("\n");
@@ -471,6 +395,9 @@ btnExport.addEventListener("click", () => {
 
   URL.revokeObjectURL(url);
 });
+
+// 初始先畫表頭（未登入也看得到欄位結構）
+renderHeader();
 </script>
 
 </body>
