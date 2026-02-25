@@ -99,6 +99,12 @@
       background:#fff;
       border:1px solid #e5e7eb;
     }
+    /* 小螢幕：兩欄改一欄，避免基本資料被擠爆 */
+    @media (max-width: 720px) {
+      .row { flex-direction: column; }
+      .left, .right { width: 100%; min-width: 0; }
+      .grid2 { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -471,7 +477,7 @@
       elCat.innerHTML = CATEGORIES.map(cat => {
         const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
         const isDone = isCategoryComplete(cd);
-        const mark = isDone ? " ✅" : " ⚪";
+        const mark = isDone ? " 🟢" : " ⚪";
         return `<option value="${cat}">${cat}${mark}</option>`;
       }).join("");
       
@@ -505,7 +511,7 @@
   
   document.getElementById("btnClear").addEventListener("click", () => {
     clearInputs();
-    setStatus("已清空本題輸入", true);
+    setStatus("已清空本次輸入", true);
   });
   elBtnStart.addEventListener("click", async () => {
     const v = validateRaterInfo();
@@ -576,7 +582,7 @@
       });
       
       await refreshSummary();
-      setStatus("已儲存（已寫入 Firestore）", true);
+      setStatus("已儲存本類評分", true);
       hasUnsavedOrUnsubmittedWork = true;
     } catch (err) {
       console.error(err);
