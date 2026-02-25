@@ -314,6 +314,37 @@
       overflow-wrap: normal;
     }
 
+    /* ✅ 平均分做成「次要資訊」：字小、淡藍、層次更清楚 */
+    .avgBox{
+      opacity: 0.95;
+    }
+    
+    .avgLabel{
+      color: #0ea5e9;          /* 淡藍 */
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+    
+    .avgValue{
+      font-size: 18px;         /* 比總分小一點 */
+      font-weight: 800;
+      color: #0284c7;          /* 深一點的藍，數字還是清楚 */
+    }
+    
+    /* ✅ 如果你也想讓「平均分」數字不要那麼高調，再淡一點用這個（可選） */
+    /*
+    .avgValue{
+      font-size: 18px;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+    */
+    .totalValue{
+      font-size: 22px;
+      font-weight: 900;
+      color: #111827;
+    }
+
     
   </style>
 </head>
@@ -428,12 +459,12 @@
             <div class="grid2" style="margin-top:10px;">
               <div>
                 <div class="label">總分（5A+5B）</div>
-                <div id="totalScore" style="font-size:20px; font-weight:700;">-</div>
+                <div id="totalScore" class="totalValue">-</div>
               </div>
             
-              <div>
-                <div class="label">平均分（總分/5）</div>
-                <div id="avgScore" style="font-size:20px; font-weight:700;">-</div>
+              <div class="avgBox">
+                <div class="label avgLabel">平均分（總分/5）</div>
+                <div id="avgScore" class="avgValue">-</div>
               </div>
             
               <div>
