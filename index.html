@@ -5,17 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>臺中市水利局AI小幫手測試結果評分</title>
   <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; margin: 16px; }
-    .row { display: flex; gap: 16px; align-items: flex-start; }
-    .col { border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
+    .row { display: flex; gap: 16px; align-items: flex-start; }    
     .left { width: 45%; min-width: 320px; }
     .right { width: 55%; min-width: 360px; }
     select, input, textarea, button { font-size: 14px; padding: 8px; }
     textarea { width: 100%; min-height: 90px; }
     .qitem { padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
     .qitem:hover { background: #fafafa; }
-    .qitem.active { border-color: #4f46e5; background: #eef2ff; }
-    .label { font-size: 12px; color: #555; margin-top: 10px; margin-bottom: 4px; }
+    .qitem.active { border-color: #4f46e5; background: #eef2ff; }    
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .hint { color: #666; font-size: 12px; margin-top: 8px; }
     .status { margin-top: 10px; }
@@ -101,9 +98,16 @@
     }
     /* 小螢幕：兩欄改一欄，避免基本資料被擠爆 */
     @media (max-width: 720px) {
+      /* 整頁改成上下 */
       .row { flex-direction: column; }
       .left, .right { width: 100%; min-width: 0; }
-      .grid2 { grid-template-columns: 1fr; }
+    
+      /* 基本資料的兩欄變一欄 */
+      .grid2 { grid-template-columns: 1fr !important; }
+    
+      /* 讓 select/input 不要撐爆容器 */
+      .grid2 > div { min-width: 0; }
+      select, input, textarea { width: 100%; min-width: 0; }
     }
   </style>
 </head>
