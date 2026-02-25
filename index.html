@@ -500,7 +500,10 @@
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-      import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+      import {
+        getAuth, signInAnonymously, onAuthStateChanged,
+        setPersistence, browserLocalPersistence
+      } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
       import {
         getFirestore, doc, getDoc, updateDoc, serverTimestamp,
         addDoc, collection
@@ -516,10 +519,12 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
       const auth = getAuth(app);
+      await setPersistence(auth, browserLocalPersistence); // ✅ 讓匿名登入不會動不動換 uid
 
       // ===== 狀態 =====
       let EVAL_ID = null;
       let IS_LOCKED = false;
+      let OWNER_UID = null; // ✅ 這份評分建立時的 uid
       let hasUnsavedOrUnsubmittedWork = false;
       let isSubmitted = false;
 
@@ -561,10 +566,23 @@
 
       // ===== Auth：確保匿名登入完成 =====
       async function initAuth() {
+        // 已登入就直接用
         if (auth.currentUser) return;
-
+      
+        // ✅ 先等候 auth state 還原（避免某些瀏覽器短暫變 null 就立刻重登，造成新 uid）
+        const restored = await new Promise((resolve) => {
+          const unsub = onAuthStateChanged(auth, (u) => {
+            if (u) { unsub(); resolve(u); }
+          });
+          // 等 1 秒還沒回來就放棄，改走匿名登入
+          setTimeout(() => { unsub(); resolve(null); }, 1000);
+        });
+      
+        if (restored) return;
+      
+        // 真的沒有才匿名登入
         await signInAnonymously(auth);
-
+      
         if (!auth.currentUser) {
           await new Promise((resolve) => {
             const unsub = onAuthStateChanged(auth, (u) => {
@@ -844,6 +862,7 @@
           });
 
           EVAL_ID = docRef.id;
+          OWNER_UID = uid;
           hasUnsavedOrUnsubmittedWork = true;
           isSubmitted = false;
           IS_LOCKED = false;
@@ -889,6 +908,11 @@
 
         try {
           await initAuth();
+          const nowUid = auth.currentUser?.uid;
+          if (!nowUid || (OWNER_UID && nowUid !== OWNER_UID)) {
+            setStatus("登入狀態變更，導致權限不符。請重整頁面後重新開始評分（避免用到不同的匿名帳號）", false);
+            return;
+          }
 
           await updateDoc(doc(db, "scores", EVAL_ID), {
             updatedAt: serverTimestamp(),
