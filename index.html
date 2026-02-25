@@ -142,7 +142,7 @@
       background:#f8fafc;
     }
     /* 題目/簡答/詳答 卡片：讓字不要貼邊 */
-    #qText, #aText, #aLongText{
+    #aText, #aLongText{
       padding: 14px 16px !important;   /* 內距加大 */
       line-height: 1.6;
     }
@@ -265,9 +265,10 @@
     </div>
     
     <div class="sectionCard">
-      <div class="status" id="status"></div>      
-  </div>
-</div>
+      <div class="status" id="status"></div>
+    </div>  
+  </div> <!-- col right -->
+</div>  <!-- row -->
 
 <script type="module">
   let IS_LOCKED = false; // 送出後 = true
@@ -279,7 +280,7 @@
     addDoc, collection 
   } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-  // ✅ 你的 Firebase 設定
+  // Firebase 設定
   const firebaseConfig = {
     apiKey: "AIzaSyBqSDWpIR_Bm2CVdnObkkuopOBrxgoXlH0",
     authDomain: "tcswg-ai-qa.firebaseapp.com",
@@ -294,7 +295,7 @@
 
 
 
-  // ✅ 分類（這一定要是「陣列」）
+  // 分類陣列
   const CATEGORIES = [
     "化糞池處理",
     "政策與法規",
@@ -303,7 +304,7 @@
     "費用與補助"    
   ];
   
-  // ✅ 分類代碼（這是物件，不是陣列）
+  // 分類代碼
   const CATEGORY_KEYS = {
     "化糞池處理": "septic",
     "接管流程與期限": "connection",
@@ -323,7 +324,7 @@
 
   // --- UI 狀態 ---
   let currentCategory = CATEGORIES[0];
-  let currentQuestion = null;  // ✅ 先不要碰 QUESTIONS
+  let currentQuestion = null;
 
 
   const elCat = document.getElementById("category");
@@ -435,7 +436,7 @@
         renderQuestionList();
         renderQuestionContent();
       
-        // ✅ 送出後不要再提示「尚未儲存」
+        // 送出後不要再提示「尚未儲存」
         if (IS_LOCKED) {
           setStatus("已鎖定（僅可瀏覽）", true);
         } else {
@@ -463,7 +464,6 @@
   }
 
   function validateScores() {
-    // 允許空白先不管，互動骨架先跑通；下一步再加嚴格規則
     const a = elScoreA.value === "" ? null : Number(elScoreA.value);
     const b = elScoreB.value === "" ? null : Number(elScoreB.value);
 
@@ -473,7 +473,7 @@
   }
   
   function isCategoryComplete(catData) {
-    // 你要的規則：A、B 都必填，0~50
+    // A、B 都必填，0~50
     if (!catData) return false;
     const a = catData.scoreA;
     const b = catData.scoreB;
@@ -523,7 +523,7 @@
         elProgressText.textContent = "✅ 已送出（已鎖定）";
         IS_LOCKED = (data.submitted === true);
       }
-      // 🔥 更新分類下拉顯示完成狀態
+      // 更新分類下拉顯示完成狀態
       elCat.innerHTML = CATEGORIES.map(cat => {
         const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
         const isDone = isCategoryComplete(cd);
@@ -547,13 +547,13 @@
     renderQuestionContent();
     renderScoreTitle();
   
-    await loadCategoryInputs(); // ✅ 改成載入本分類已存的分數/評語
+    await loadCategoryInputs(); // 改成載入本分類已存的分數/評語
     await refreshSummary();
     setStatus(IS_LOCKED ? "已鎖定（僅可瀏覽）" : "已切換分類（已載入本分類分數/評語）", true);
   });
 
   elComment.addEventListener("input", () => {
-    // 保險：有些情況貼上可能超過 maxlength 或帶奇怪字元
+    // 有些情況貼上可能超過 maxlength 或帶奇怪字元
     if (elComment.value.length > 200) {
       elComment.value = elComment.value.slice(0, 200);
     }
@@ -583,7 +583,7 @@
         updatedAt: serverTimestamp()
       });
   
-      EVAL_ID = docRef.id; // 🔥 這一行是關鍵
+      EVAL_ID = docRef.id; 
       hasUnsavedOrUnsubmittedWork = true;
       isSubmitted = false;
   
@@ -601,88 +601,54 @@
 
 
 
-  document.getElementById("btnSave").addEventListener("click", async () => {
-        const r = validateRaterInfo();
-        if (!r.ok) { setStatus("請先完成科室/職稱/姓名，按「開始評分」", false); return; }
-    
-        if (!currentQuestion) {
-          setStatus("沒有選到題目", false);
-          return;
-        }
-        const v = validateScores();
-        if (!v.ok) {
-          setStatus(v.msg, false);
-          return;
-        }
-    const comment = (elComment.value || "").trim();
-    if (comment.length > 200) {
-      setStatus("評語最多 200 字", false);
-      return;
-    }
+document.getElementById("btnSave").addEventListener("click", async () => {
+  if (!EVAL_ID) {
+    setStatus("請先按「開始評分」建立評分紀錄", false);
+    return;
+  }
 
-    try {
-         
-      await updateDoc(doc(db, "scores", EVAL_ID), {
-        updatedAt: serverTimestamp(),
-        [`categories.${currentCategory}`]: {
-          scoreA: v.a,
-          scoreB: v.b,
-          comment: comment,
-          updatedAt: serverTimestamp()
-        }
-      });
-      
-      await refreshSummary();
-      setStatus("已儲存本類評分", true);
-      hasUnsavedOrUnsubmittedWork = true;
-    } catch (err) {
-      console.error(err);
-      setStatus("寫入失敗，請看 Console", false);
-    }
-  });
-  elBtnSubmit.addEventListener("click", async () => {
-    if (!EVAL_ID) { setStatus("尚未建立評分紀錄", false); return; }
-  
-    const ok = confirm("確認送出後將鎖定不可修改。確定要送出嗎？");
-    if (!ok) return;
-  
-    try {
-      const snap = await getDoc(doc(db, "scores", EVAL_ID));
-      const data = snap.data() || {};
-      const cats = data.categories || {};
-  
-      // 再算一次 total（避免前端狀態不一致）
-      let total = 0;
-      for (const cat of CATEGORIES) {
-        const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
-        if (!isCategoryComplete(cd)) {
-          setStatus("仍有分類未完成（A/B 必填）", false);
-          return;
-        }
-        total += (cd.scoreA + cd.scoreB);
-      }
-  
-      await updateDoc(doc(db, "scores", EVAL_ID), {
-        submitted: true,
-        totalScore: total,
-        submittedAt: serverTimestamp(),
+  const r = validateRaterInfo();
+  if (!r.ok) {
+    setStatus("請先完成科室/職稱/姓名，按「開始評分」", false);
+    return;
+  }
+
+  if (!currentQuestion) {
+    setStatus("沒有選到題目", false);
+    return;
+  }
+
+  const v = validateScores();
+  if (!v.ok) {
+    setStatus(v.msg, false);
+    return;
+  }
+
+  const comment = (elComment.value || "").trim();
+  if (comment.length > 200) {
+    setStatus("評語最多 200 字", false);
+    return;
+  }
+
+  try {
+    await updateDoc(doc(db, "scores", EVAL_ID), {
+      updatedAt: serverTimestamp(),
+      [`categories.${currentCategory}`]: {
+        scoreA: v.a,
+        scoreB: v.b,
+        comment,
         updatedAt: serverTimestamp()
-      });
-      isSubmitted = true;
-      hasUnsavedOrUnsubmittedWork = false;
-  
-      // 鎖定
-      setScoringEnabled(false);
-      elBtnSubmit.disabled = true;
-      IS_LOCKED = true;
-  
-      setStatus("✅ 已送出並鎖定", true);
-      await refreshSummary();
-    } catch (err) {
-      console.error(err);
-      setStatus("送出失敗（請看 Console）", false);
-    }
-  });
+      }
+    });
+
+    await refreshSummary();
+    setStatus("已儲存本類評分", true);
+    hasUnsavedOrUnsubmittedWork = true;
+  } catch (err) {
+    console.error(err);
+    setStatus("寫入失敗，請看 Console", false);
+  }
+});
 
   // --- 初始化 ---
   setScoringEnabled(false);  // ✅ 一進來先鎖
@@ -691,7 +657,7 @@
     await loadQuestions(); // ✅ 先把 200 題載進來
     console.log("題庫分類 keys =", Object.keys(QUESTIONS));
   
-    // ✅ 讓分類下拉用「你既有的 CATEGORIES 順序」，而不是 Object.keys 的隨機順序
+    // 讓分類下拉用既有的 CATEGORIES 順序，而不是 Object.keys 的隨機順序
     currentCategory = CATEGORIES[0];
     currentQuestion = (QUESTIONS[currentCategory] && QUESTIONS[currentCategory][0]) ? QUESTIONS[currentCategory][0] : null;
   
@@ -699,7 +665,7 @@
     renderQuestionList();
     renderQuestionContent();
   
-    // ❌ 初始化時先不要 loadCategoryInputs（因為還沒按開始評分）
+    // 初始化時先不要 loadCategoryInputs（因為還沒按開始評分）
     setStatus("題庫已載入。請先填科室/職稱/姓名，按「開始評分」後再評分", true);
   } catch (err) {
     console.error(err);
@@ -719,6 +685,6 @@
   
 
 </script>
-    </div>
+</div> <!-- container -->
 </body>
 </html>
