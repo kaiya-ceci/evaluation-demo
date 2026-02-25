@@ -99,25 +99,7 @@
       line-height: 1.6;
     }
 
-    /* ✅ 評分總覽：三格貼齊、等高 */
-    .sectionCard .grid2{
-      align-items: stretch;          /* 讓三格等高 */
-    }
-    
-    .sectionCard .grid2 > div{
-      background: #fff;              /* 小卡底色 */
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-    }
 
-    /* ✅ 平均分那格不要自己撐高 */
-    .sectionCard .avgBox{
-      height: auto;
-    }
     .contentCard{
       white-space: pre-wrap;
       border: 1px solid #eee;
@@ -373,6 +355,43 @@
       color: #dc2626;   /* 85↓ 紅色 */
     }
 
+    /* ✅ 評分總覽專用：桌機三欄，手機不擠爆 */
+    .summaryGrid{
+      display: grid;
+      gap: 12px;
+      align-items: stretch;
+    }
+    
+    /* 手機：一欄（最穩） */
+    @media (max-width: 720px){
+      .summaryGrid{
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* 平板：兩欄（可選） */
+    @media (min-width: 721px) and (max-width: 899px){
+      .summaryGrid{
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    /* 桌機：三欄 */
+    @media (min-width: 900px){
+      .summaryGrid{
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    
+    /* 三格做成一致的小卡 */
+    .summaryGrid > div{
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:12px 14px;
+      min-width: 0;                 /* ✅ 防止內容把格子撐爆 */
+    }
+
     
   </style>
 </head>
@@ -485,7 +504,7 @@
             <strong>評分總覽</strong>
             <div class="hint" id="progressText" style="margin-top:6px;">尚未開始</div>
     
-            <div class="grid2" style="margin-top:10px;">
+            <div class="grid2 summaryGrid" style="margin-top:10px;">
               <div>
                 <div class="label">總分（5A+5B）</div>
                 <div id="totalScore" class="totalValue">-</div>
