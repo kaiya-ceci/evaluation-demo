@@ -39,6 +39,8 @@
       background: #fff;
       border: 1px solid #e5e7eb;
       box-shadow: 0 6px 18px rgba(17, 24, 39, 0.06);
+      padding: 16px;
+      border-radius: 14px;
     }
     .left, .right { border-radius: 14px; }
     
@@ -144,6 +146,15 @@
       padding: 14px 16px !important;   /* 內距加大 */
       line-height: 1.6;
     }
+
+    .contentCard{
+      white-space: pre-wrap;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 14px;
+      min-height: 70px;
+      background: #fff;
+    }
   </style>
 </head>
 <body>
@@ -199,10 +210,10 @@
   <div class="col right">
     
     <div class="label">簡答</div>
-    <div id="aText" style="white-space: pre-wrap; border:1px solid #eee; border-radius:8px; padding:10px; min-height:60px;"></div>
+    <div id="aText" class="contentCard"></div>
+    
     <div class="label">詳答</div>
-    <div id="aLongText" style="white-space: pre-wrap; border:1px solid #eee; border-radius:8px; padding:10px; min-height:90px;"></div>
-
+    <div id="aLongText" class="contentCard"></div>
 
     <div class="scoreCard">
       <div class="scoreCardTitle">
