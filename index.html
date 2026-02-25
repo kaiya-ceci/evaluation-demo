@@ -30,7 +30,7 @@
     h2 { margin-bottom: 10px; }
     hr { border: 0; border-top: 1px solid #e5e7eb; }
     .container {
-      max-width: 1200px;      /* 不要太寬 */
+      max-width: 1400px;      /* 不要太寬 */
       margin: 0 auto;         /* 置中 */
       padding: 24px 20px;     /* 左右內縮 */
     }
@@ -175,11 +175,7 @@
   </div>
 
   <div class="col right">
-    <strong>題目內容</strong>
-
-    <div class="label">題目</div>
-    <div id="qText" style="white-space: pre-wrap; border:1px solid #eee; border-radius:8px; padding:10px; min-height:60px;"></div>
-
+    
     <div class="label">簡答</div>
     <div id="aText" style="white-space: pre-wrap; border:1px solid #eee; border-radius:8px; padding:10px; min-height:60px;"></div>
     <div class="label">詳答</div>
@@ -236,7 +232,7 @@
     </div>
 
     <div class="status" id="status"></div>
-    <div class="hint">記得儲存評分結果喔！</div>
+    <div class="hint"> 記得儲存評分結果喔！</div>
   </div>
 </div>
 
@@ -299,7 +295,6 @@
 
   const elCat = document.getElementById("category");
   const elList = document.getElementById("qList");
-  const elQ = document.getElementById("qText");
   const elA = document.getElementById("aText");
   const elALong = document.getElementById("aLongText");
   const elScoreA = document.getElementById("scoreA");
@@ -418,7 +413,6 @@
   }
 
   function renderQuestionContent() {
-    elQ.textContent = currentQuestion?.q || "";
     elA.textContent = currentQuestion?.aShort || "";
     elALong.textContent = currentQuestion?.aLong || "";
   }
