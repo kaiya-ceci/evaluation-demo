@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>外部評分骨架</title>
+  <title>臺中市水利局AI小幫手測試結果評分</title>
   <style>
     body { font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; margin: 16px; }
     .row { display: flex; gap: 16px; align-items: flex-start; }
@@ -103,7 +103,7 @@
 </head>
 <body>
 
-<h2>外部評分（互動骨架版）</h2>
+<h2>臺中市水利局AI小幫手測試結果評分</h2>
 
 <h3 style="margin-top:10px;">評分者基本資料</h3>
 
@@ -196,7 +196,7 @@
     
       <div class="grid2" style="margin-top:10px;">
         <div>
-          <div class="label">總分（A+B）</div>
+          <div class="label">總分（5A+5B）</div>
           <div id="totalScore" style="font-size:20px; font-weight:700;">-</div>
         </div>
         <div>
@@ -212,12 +212,13 @@
     </div>
 
     <div class="status" id="status"></div>
-    <div class="hint">目前儲存是「每按一次就新增一筆」：只是先驗證互動與寫入。下一步再改成「同一人同一筆更新」。</div>
+    <div class="hint">記得儲存評分結果喔！</div>
   </div>
 </div>
 
 <script type="module">
- import { initializeApp } 
+  let IS_LOCKED = false; // 送出後 = true
+  import { initializeApp } 
   from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 
   import { 
@@ -374,12 +375,19 @@
     qs.forEach(q => {
       const div = document.createElement("div");
       div.className = "qitem" + (q.id === currentQuestion?.id ? " active" : "");
+      div.style.cursor = IS_LOCKED ? "default" : "pointer";
       div.innerHTML = `<div><strong>${q.id}</strong></div><div style="margin-top:4px; white-space:pre-wrap;">${q.q}</div>`;
       div.onclick = () => {
         currentQuestion = q;
         renderQuestionList();
         renderQuestionContent();
-        setStatus("已切換題目（尚未儲存）", true);
+      
+        // ✅ 送出後不要再提示「尚未儲存」
+        if (IS_LOCKED) {
+          setStatus("已鎖定（僅可瀏覽）", true);
+        } else {
+          setStatus("已切換題目（尚未儲存）", true);
+        }
       };
       elList.appendChild(div);
     });
@@ -457,6 +465,7 @@
       elBtnSubmit.disabled = (done !== 5) || (data.submitted === true);
       if (data.submitted === true) {
         elProgressText.textContent = "✅ 已送出（已鎖定）";
+        IS_LOCKED = (data.submitted === true);
       }
       // 🔥 更新分類下拉顯示完成狀態
       elCat.innerHTML = CATEGORIES.map(cat => {
@@ -483,7 +492,7 @@
   
     await loadCategoryInputs(); // ✅ 改成載入本分類已存的分數/評語
     await refreshSummary();
-    setStatus("已切換分類（已載入本分類分數/評語）", true);
+    setStatus(IS_LOCKED ? "已鎖定（僅可瀏覽）" : "已切換分類（已載入本分類分數/評語）", true);
   });
 
   elComment.addEventListener("input", () => {
@@ -608,6 +617,7 @@
       // 鎖定
       setScoringEnabled(false);
       elBtnSubmit.disabled = true;
+      IS_LOCKED = true;
   
       setStatus("✅ 已送出並鎖定", true);
       await refreshSummary();
