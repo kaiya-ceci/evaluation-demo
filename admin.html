@@ -118,25 +118,39 @@ btnLogout.addEventListener("click", async () => {
   await signOut(auth);
 });
 
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    loginMsg.textContent = `已登入：${user.email ?? "(no email)"}`;
-    btnLogin.style.display = "none";
-    btnLogout.style.display = "";
-    btnExport.disabled = false;
-    btnToggleAB.disabled = false;
-    loadData();
-  } else {
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
     loginMsg.textContent = "尚未登入";
     btnLogin.style.display = "";
     btnLogout.style.display = "none";
     btnExport.disabled = true;
     btnToggleAB.disabled = true;
-    showAB = false;
-    btnToggleAB.textContent = "展開 A/B";
     exportRows = [];
     tableBody.innerHTML = "";
+    return;
   }
+
+  // ✅ 如果是匿名帳號：直接登出，不給看
+  if (user.isAnonymous || !user.email) {
+    await signOut(auth);
+    loginMsg.textContent = "請使用管理員 Email/Password 登入（不接受匿名登入）";
+    btnLogin.style.display = "";
+    btnLogout.style.display = "none";
+    btnExport.disabled = true;
+    btnToggleAB.disabled = true;
+    exportRows = [];
+    tableBody.innerHTML = "";
+    return;
+  }
+
+  // ✅ 正常管理員登入
+  loginMsg.textContent = `已登入：${user.email}`;
+  btnLogin.style.display = "none";
+  btnLogout.style.display = "";
+  btnExport.disabled = false;
+  btnToggleAB.disabled = false;
+
+  loadData();
 });
 
 /** ========= Load ========= */
