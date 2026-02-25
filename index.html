@@ -434,7 +434,7 @@
 
     <div class="startRow">
       <button id="btnStart" type="button">開始評分</button>
-      <span class="hint">基本資料填寫完成才可開始評分</span>
+      <span class="hint">請先填寫基本資料再開始評分</span>
       <span id="startStatus" class="miniStatus"></span>
     </div>
 
@@ -531,7 +531,7 @@
     
             <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
               <button id="btnSubmit" type="button">確認送出（完成後鎖定）</button>
-              <span class="hint">需五類皆填 A/B 才能送出</span>
+              <span class="hint">需五類皆評分完成才能送出</span>
             </div>
           </div>
     
@@ -987,7 +987,7 @@
         if (isSubmitted || IS_LOCKED) { setStatus("已送出（已鎖定）", true); return; }
 
         await refreshSummary();
-        if (elBtnSubmit.disabled) { setStatus("需五類皆填 A/B 才能送出", false); return; }
+        if (elBtnSubmit.disabled) { setStatus("需五類皆評分完成才能送出", false); return; }
 
         if (!confirm("確認送出後將鎖定，無法再修改。確定送出？")) return;
 
