@@ -206,17 +206,20 @@ async function loadData() {
     renderTable();
 
     // 沒資料時給提示
-    if (exportRows.length === 0) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="15" style="text-align:center;color:#666;">目前沒有「已送出」資料</td>`;
-      tableBody.appendChild(tr);
+  async function loadData() {
+    try {
+      if (exportRows.length === 0) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="15" style="text-align:center;color:#666;">目前沒有「已送出」資料</td>`;
+        tableBody.appendChild(tr);
+      }
+  
+    } catch (err) {
+      console.error(err);
+      alert("讀取 Firestore 失敗，請看 Console");
     }
-  } catch (err) {
-    console.error(err);
-    alert("讀取 Firestore 失敗，請看 Console");
   }
-}
-
+  
 btnExport.addEventListener("click", () => {
   if (exportRows.length === 0) {
     alert("沒有可匯出的資料");
