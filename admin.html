@@ -139,6 +139,26 @@
     max-width: 170px;
     white-space: nowrap;     /* 不要一字一行 */
   }
+  .infoBox{
+    margin-top: 12px;
+    margin-bottom: 10px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #2563eb;   /* 左側藍色強調線 */
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  
+  .infoBox ul{
+    margin: 8px 0 0 18px;
+    padding: 0;
+  }
+  
+  .infoBox li{
+    margin-bottom: 4px;
+  }
 </style>
 </head>
 <body>
@@ -157,6 +177,16 @@
 
 <button id="btnExport" disabled>下載 CSV</button>
 <button id="btnToggleAB" disabled>展開 A/B</button>
+<div class="infoBox">
+  <strong>📌 使用說明</strong>
+  <ul>
+    <li>本頁僅顯示「已送出」之評分資料。</li>
+    <li>可點擊欄位標題進行排序（↑↓）。</li>
+    <li>「展開 A/B」可查看各題 內容正確性A、語意完整性B 分數明細。</li>
+    <li>評語欄固定高度，內容過長可於欄內捲動。</li>
+    <li>可使用「下載 CSV」匯出完整資料。</li>
+  </ul>
+</div>
 
 <div class="tableWrap">
   <table id="dataTable">
