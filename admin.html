@@ -102,7 +102,7 @@
     word-break: break-word;
     overflow-wrap: anywhere;
   
-    height: 140px;              /* 每格一樣高（你可改 120/160） */
+    height: 70px;              /* 每格一樣高（你可改 120/160） */
     overflow-y: auto;
   }
   
@@ -124,6 +124,20 @@
   th{
     white-space: normal;
     line-height: 1.2;
+  }
+  /* 總分/送出時間欄固定寬，避免變成直排 */
+  th.totalCol, td.totalCol{
+    width: 90px;
+    min-width: 90px;
+    max-width: 90px;
+    white-space: nowrap;
+  }
+  
+  th.timeCol, td.timeCol{
+    width: 170px;            /* 你可改 190/210 */
+    min-width: 170px;
+    max-width: 170px;
+    white-space: nowrap;     /* 不要一字一行 */
   }
 </style>
 </head>
@@ -354,8 +368,8 @@ function renderHeader() {
     headerRow.appendChild(th(`${name} 評語`, { cls:[cls, "commentCol"] }));
   });
 
-  headerRow.appendChild(th("總分 ↕", { key:"total", cls:"cat-total" }));
-  headerRow.appendChild(th("送出時間 ↕", { key:"timeMs", cls:"cat-total" }));
+  headerRow.appendChild(th("總分 ↕", { key:"total", cls:["cat-total","totalCol"] }));
+  headerRow.appendChild(th("送出時間 ↕", { key:"timeMs", cls:["cat-total","timeCol"] }));
 }
 
 /** ========= Table ========= */
@@ -383,8 +397,8 @@ function renderTable() {
       tr.appendChild(td(row[name + "_comment"] ?? "", { cls:[cls, "commentCol"], preWrap:true }));
     });
 
-    tr.appendChild(td(row.total ?? "", { cls:"cat-total" }));
-    tr.appendChild(td(row.time ?? "", { cls:"cat-total" }));
+    tr.appendChild(td(row.total ?? "", { cls:["cat-total","totalCol"] }));
+    tr.appendChild(td(row.time ?? "", { cls:["cat-total","timeCol"] }));
 
     tableBody.appendChild(tr);
   });
