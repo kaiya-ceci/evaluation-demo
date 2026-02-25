@@ -16,7 +16,7 @@
     max-height: 70vh; /* 讓你可以垂直捲動 */
   }
 
-  table { border-collapse: collapse; width:max-content; min-width:100%; }
+  table { border-collapse: collapse; width: 100%; table-layout: fixed; }
   th, td { border:1px solid #ddd; padding:8px; font-size:14px; vertical-align: top; }
   th { background:#f3f4f6; position: sticky; top: 0; z-index: 2; }
 
@@ -77,19 +77,34 @@
      指定欄寬（可依需求微調）
      ========================= */
   
-  th:nth-child(1), td:nth-child(1) { width: 70px; }   /* 姓名 */
-  th:nth-child(2), td:nth-child(2) { width: 140px; }  /* 科室 */
-  th:nth-child(3), td:nth-child(3) { width: 100px; }  /* 職稱 */
-  th:nth-child(4), td:nth-child(4) { width: 120px; }  /* 化糞池處理 A+B */
-  
-  /* 如果你有評語欄位（假設第5欄） */
-  th:nth-child(5), td:nth-child(5) {
-    width: 320px;            /* ⭐ 評語固定寬 */
-  }
   
   /* 表格外層可橫向滑動（手機用） */
   .tableWrapper {
     overflow-x: auto;
+  }
+  /* ✅ 評語欄統一寬度 + 內容顯示 */
+  th.commentCol, td.commentCol{
+    width: 320px;
+    min-width: 320px;
+    max-width: 320px;
+  }
+  
+  /* ✅ 讓每格評語不把整列撐爆：固定高度 + 內部捲動 */
+  td.commentCol{
+    white-space: pre-wrap;      /* 你原本 prewrap 也可以保留，這更直接 */
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  
+    height: 140px;              /* 每格一樣高（你可改 120/160） */
+    overflow-y: auto;
+  }
+  
+  /* ✅ 數字欄（A/B/A+B）可以窄一點，表格更整齊 */
+  th.numCol, td.numCol{
+    width: 110px;
+    min-width: 110px;
+    max-width: 110px;
+    text-align: left;
   }
 </style>
 </head>
@@ -271,14 +286,22 @@ function td(text, { preWrap=false, cls="" } = {}) {
   const cell = document.createElement("td");
   cell.textContent = String(text ?? "");
   if (preWrap) cell.classList.add("prewrap");
-  if (cls) cell.classList.add(cls);
+
+  // ✅ cls 可為字串或陣列
+  if (Array.isArray(cls)) cls.forEach(c => c && cell.classList.add(c));
+  else if (cls) cell.classList.add(cls);
+
   return cell;
 }
 
 function th(text, { key=null, cls="", sticky=null, widthCls="" } = {}) {
   const el = document.createElement("th");
   el.textContent = text;
-  if (cls) el.classList.add(cls);
+
+  // ✅ cls 可為字串或陣列
+  if (Array.isArray(cls)) cls.forEach(c => c && el.classList.add(c));
+  else if (cls) el.classList.add(cls);
+
   if (widthCls) el.classList.add(widthCls);
 
   if (sticky === 1) el.classList.add("stickyL","w-name");
@@ -305,11 +328,11 @@ function renderHeader() {
   // 每一類：A、B、A+B、評語（同色、排一起）
   CAT_META.forEach(({name, cls}) => {
     if (showAB) {
-      headerRow.appendChild(th(`${name} A ↕`, { key: name + "_A", cls }));
-      headerRow.appendChild(th(`${name} B ↕`, { key: name + "_B", cls }));
+      headerRow.appendChild(th(`${name} A ↕`, { key: name + "_A", cls:[cls, "numCol"] }));
+      headerRow.appendChild(th(`${name} B ↕`, { key: name + "_B", cls:[cls, "numCol"] }));
     }
-    headerRow.appendChild(th(`${name} A+B ↕`, { key: name + "_SUM", cls }));
-    headerRow.appendChild(th(`${name} 評語`, { cls })); // 評語不排序（你想排序我也可加）
+    headerRow.appendChild(th(`${name} A+B ↕`, { key: name + "_SUM", cls:[cls, "numCol"] }));
+    headerRow.appendChild(th(`${name} 評語`, { cls:[cls, "commentCol"] }));
   });
 
   headerRow.appendChild(th("總分 ↕", { key:"total", cls:"cat-total" }));
@@ -334,11 +357,11 @@ function renderTable() {
     // 分類群組
     CAT_META.forEach(({name, cls}) => {
       if (showAB) {
-        tr.appendChild(td(row[name + "_A"] ?? "", { cls }));
-        tr.appendChild(td(row[name + "_B"] ?? "", { cls }));
+        tr.appendChild(td(row[name + "_A"] ?? "", { cls:[cls, "numCol"] }));
+        tr.appendChild(td(row[name + "_B"] ?? "", { cls:[cls, "numCol"] }));
       }
-      tr.appendChild(td(row[name + "_SUM"] ?? "", { cls }));
-      tr.appendChild(td(row[name + "_comment"] ?? "", { cls, preWrap:true }));
+      tr.appendChild(td(row[name + "_SUM"] ?? "", { cls:[cls, "numCol"] }));
+      tr.appendChild(td(row[name + "_comment"] ?? "", { cls:[cls, "commentCol"], preWrap:true }));
     });
 
     tr.appendChild(td(row.total ?? "", { cls:"cat-total" }));
