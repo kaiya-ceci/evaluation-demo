@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>評分管理端</title>
+<title>臺中市水利局AI小幫手測試-評分結果瀏覽</title>
 <style>
   body { font-family: system-ui; margin:20px; }
   table { border-collapse: collapse; width:100%; margin-top:15px; }
@@ -16,7 +16,7 @@
 </head>
 <body>
 
-<h2>評分管理端</h2>
+<h2>臺中市水利局AI小幫手測試-評分結果瀏覽</h2>
 
 <div id="loginBox" style="margin:12px 0; padding:12px; border:1px solid #ddd; border-radius:8px; max-width:420px;">
   <div style="display:flex; gap:8px; margin-bottom:8px;">
@@ -29,6 +29,8 @@
 </div>
 
 <button id="btnExport" disabled>下載 CSV</button>
+<button id="btnToggleAB" disabled>展開 A/B</button>
+  
 
 <table id="dataTable">
   <thead>
@@ -84,6 +86,8 @@ const btnLogin = document.getElementById("btnLogin");
 const btnLogout = document.getElementById("btnLogout");
 const loginMsg = document.getElementById("loginMsg");
 
+const btnToggleAB = document.getElementById("btnToggleAB");
+
 /** ========= Data ========= */
 const CATEGORIES = [
   "化糞池處理",
@@ -96,6 +100,7 @@ const CATEGORIES = [
 let exportRows = [];
 let sortKey = null;
 let sortAsc = true;
+let showAB = false;
 
 /** ========= Auth UI ========= */
 btnLogin.addEventListener("click", async () => {
@@ -121,6 +126,7 @@ onAuthStateChanged(auth, (user) => {
     btnLogin.style.display = "none";
     btnLogout.style.display = "";
     btnExport.disabled = false;
+    btnToggleAB.disabled = false;
     loadData();
   } else {
     loginMsg.textContent = "尚未登入";
@@ -129,6 +135,9 @@ onAuthStateChanged(auth, (user) => {
     btnExport.disabled = true;
     exportRows = [];
     tableBody.innerHTML = "";
+    btnToggleAB.disabled = true;
+    showAB = false;
+    btnToggleAB.textContent = "展開 A/B";
   }
 });
 
@@ -155,12 +164,16 @@ async function loadData() {
 
       CATEGORIES.forEach(cat => {
         const cd = cats[cat];
-        row[cat] = cd ? ((cd.scoreA ?? 0) + (cd.scoreB ?? 0)) : "";
+      
+        const a = cd?.scoreA ?? null;
+        const b = cd?.scoreB ?? null;
+      
+        row[cat + "_A"] = a;
+        row[cat + "_B"] = b;
+        row[cat] = (a == null || b == null) ? "" : (a + b); // A+B
+      
         row[cat + "_comment"] = cd?.comment ?? "";
       });
-
-      exportRows.push(row);
-    });
 
     renderTable();
     updateSortIcons();
@@ -179,51 +192,75 @@ function renderTable() {
 
   exportRows.forEach(row => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="name"></td>
-      <td class="dept"></td>
-      <td class="title"></td>
 
-      <td class="s1"></td>
-      <td class="s2"></td>
-      <td class="s3"></td>
-      <td class="s4"></td>
-      <td class="s5"></td>
+    // 基本欄位
+    tr.appendChild(td(row.name));
+    tr.appendChild(td(row.dept));
+    tr.appendChild(td(row.title));
 
-      <td class="c1"></td>
-      <td class="c2"></td>
-      <td class="c3"></td>
-      <td class="c4"></td>
-      <td class="c5"></td>
+    // 展開 A/B（10欄）
+    if (showAB) {
+      CATEGORIES.forEach(cat => {
+        tr.appendChild(td(row[cat + "_A"] ?? ""));
+        tr.appendChild(td(row[cat + "_B"] ?? ""));
+      });
+    }
 
-      <td class="total"></td>
-      <td class="time"></td>
-    `;
+    // A+B（你原本的5欄）
+    tr.appendChild(td(row["化糞池處理"] ?? ""));
+    tr.appendChild(td(row["政策與法規"] ?? ""));
+    tr.appendChild(td(row["施工與技術"] ?? ""));
+    tr.appendChild(td(row["接管流程與期限"] ?? ""));
+    tr.appendChild(td(row["費用與補助"] ?? ""));
 
-    tr.querySelector(".name").textContent = row.name || "";
-    tr.querySelector(".dept").textContent = row.dept || "";
-    tr.querySelector(".title").textContent = row.title || "";
+    // 評語（5欄）
+    tr.appendChild(td(row["化糞池處理_comment"] ?? "", true));
+    tr.appendChild(td(row["政策與法規_comment"] ?? "", true));
+    tr.appendChild(td(row["施工與技術_comment"] ?? "", true));
+    tr.appendChild(td(row["接管流程與期限_comment"] ?? "", true));
+    tr.appendChild(td(row["費用與補助_comment"] ?? "", true));
 
-    tr.querySelector(".s1").textContent = row["化糞池處理"] ?? "";
-    tr.querySelector(".s2").textContent = row["政策與法規"] ?? "";
-    tr.querySelector(".s3").textContent = row["施工與技術"] ?? "";
-    tr.querySelector(".s4").textContent = row["接管流程與期限"] ?? "";
-    tr.querySelector(".s5").textContent = row["費用與補助"] ?? "";
-
-    tr.querySelector(".c1").textContent = row["化糞池處理_comment"] || "";
-    tr.querySelector(".c2").textContent = row["政策與法規_comment"] || "";
-    tr.querySelector(".c3").textContent = row["施工與技術_comment"] || "";
-    tr.querySelector(".c4").textContent = row["接管流程與期限_comment"] || "";
-    tr.querySelector(".c5").textContent = row["費用與補助_comment"] || "";
-
-    tr.querySelectorAll(".c1,.c2,.c3,.c4,.c5").forEach(td => {
-      td.style.whiteSpace = "pre-wrap";
-    });
-
-    tr.querySelector(".total").textContent = row.total ?? "";
-    tr.querySelector(".time").textContent = row.time || "";
+    // 總分、送出時間
+    tr.appendChild(td(row.total ?? ""));
+    tr.appendChild(td(row.time ?? ""));
 
     tableBody.appendChild(tr);
+  });
+}
+
+function td(text, preWrap = false) {
+  const cell = document.createElement("td");
+  cell.textContent = String(text ?? "");
+  if (preWrap) cell.style.whiteSpace = "pre-wrap";
+  return cell;
+}
+
+function rebuildHeader() {
+  const headerRow = document.querySelector("#dataTable thead tr");
+
+  // 移除舊的 AB 欄（我們用 data-ab="1" 標記）
+  headerRow.querySelectorAll("th[data-ab='1']").forEach(th => th.remove());
+
+  if (!showAB) return;
+
+  // 在「職稱」後面插入 10 個欄位（每類 A/B）
+  // 目前職稱是第3欄，所以插入點是 index 3
+  const insertAfterIndex = 3;
+  const ths = headerRow.querySelectorAll("th");
+  const refNode = ths[insertAfterIndex]; // 插在它後面
+
+  // 依序插入：每個分類 A / B
+  CATEGORIES.forEach(cat => {
+    const thA = document.createElement("th");
+    thA.textContent = `${cat} A`;
+    thA.setAttribute("data-ab", "1");
+
+    const thB = document.createElement("th");
+    thB.textContent = `${cat} B`;
+    thB.setAttribute("data-ab", "1");
+
+    refNode.after(thB);
+    refNode.after(thA);
   });
 }
 
@@ -279,6 +316,14 @@ btnExport.addEventListener("click", () => {
     alert("沒有可匯出的資料");
     return;
   }
+btnToggleAB.addEventListener("click", () => {
+  showAB = !showAB;
+  btnToggleAB.textContent = showAB ? "收起 A/B" : "展開 A/B";
+
+  rebuildHeader();
+  renderTable();
+  updateSortIcons(); // 讓排序箭頭不亂
+});
 
   const headers = [
     "姓名","科室","職稱",
