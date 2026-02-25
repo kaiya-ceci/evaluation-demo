@@ -10,6 +10,8 @@
   th, td { border:1px solid #ddd; padding:8px; font-size:14px; }
   th { background:#f3f4f6; }
   button { padding:8px 14px; font-size:14px; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { background: #e5e7eb; }
 </style>
 </head>
 <body>
@@ -24,17 +26,17 @@
       <th>姓名</th>
       <th>科室</th>
       <th>職稱</th>
-      <th>化糞池處理</th>
-      <th>政策與法規</th>
-      <th>施工與技術</th>
-      <th>接管流程與期限</th>
-      <th>費用與補助</th>
+      <th data-key="化糞池處理" class="sortable">化糞池處理 ↕</th>
+      <th data-key="政策與法規" class="sortable">政策與法規 ↕</th>
+      <th data-key="施工與技術" class="sortable">施工與技術 ↕</th>
+      <th data-key="接管流程與期限" class="sortable">接管流程與期限 ↕</th>
+      <th data-key="費用與補助" class="sortable">費用與補助 ↕</th>
       <th>化糞池處理評語</th>
       <th>政策與法規評語</th>
       <th>施工與技術評語</th>
       <th>接管流程與期限評語</th>
       <th>費用與補助評語</th>
-      <th>總分</th>
+      <th data-key="total" class="sortable">總分 ↕</th>
       <th>送出時間</th>
     </tr>
   </thead>
@@ -133,6 +135,7 @@ async function loadData() {
       });
       tableBody.appendChild(tr);
     });
+    renderTable();
 
     // 沒資料時給提示
     if (exportRows.length === 0) {
@@ -189,7 +192,97 @@ btnExport.addEventListener("click", () => {
 
   URL.revokeObjectURL(url);
 });
+let sortKey = null;
+let sortAsc = true;
 
+function renderTable() {
+  tableBody.innerHTML = "";
+
+  exportRows.forEach(row => {
+    const tr = document.createElement("tr");
+
+    // ✅ 不要用 innerHTML 直接塞評語（安全），下面第3點會一起處理
+    tr.innerHTML = `
+      <td class="name"></td>
+      <td class="dept"></td>
+      <td class="title"></td>
+
+      <td class="s1"></td>
+      <td class="s2"></td>
+      <td class="s3"></td>
+      <td class="s4"></td>
+      <td class="s5"></td>
+
+      <td class="c1"></td>
+      <td class="c2"></td>
+      <td class="c3"></td>
+      <td class="c4"></td>
+      <td class="c5"></td>
+
+      <td class="total"></td>
+      <td class="time"></td>
+    `;
+
+    tr.querySelector(".name").textContent = row.name || "";
+    tr.querySelector(".dept").textContent = row.dept || "";
+    tr.querySelector(".title").textContent = row.title || "";
+
+    tr.querySelector(".s1").textContent = row["化糞池處理"] ?? "";
+    tr.querySelector(".s2").textContent = row["政策與法規"] ?? "";
+    tr.querySelector(".s3").textContent = row["施工與技術"] ?? "";
+    tr.querySelector(".s4").textContent = row["接管流程與期限"] ?? "";
+    tr.querySelector(".s5").textContent = row["費用與補助"] ?? "";
+
+    tr.querySelector(".c1").textContent = row["化糞池處理_comment"] || "";
+    tr.querySelector(".c2").textContent = row["政策與法規_comment"] || "";
+    tr.querySelector(".c3").textContent = row["施工與技術_comment"] || "";
+    tr.querySelector(".c4").textContent = row["接管流程與期限_comment"] || "";
+    tr.querySelector(".c5").textContent = row["費用與補助_comment"] || "";
+    tr.querySelectorAll(".c1,.c2,.c3,.c4,.c5").forEach(td => td.style.whiteSpace = "pre-wrap");
+
+    tr.querySelector(".total").textContent = row.total ?? "";
+    tr.querySelector(".time").textContent = row.time || "";
+
+    tableBody.appendChild(tr);
+  });
+}
+
+function sortBy(key) {
+  if (sortKey === key) {
+    sortAsc = !sortAsc;
+  } else {
+    sortKey = key;
+    sortAsc = true;
+  }
+
+  exportRows.sort((a, b) => {
+    const av = a[key] ?? "";
+    const bv = b[key] ?? "";
+
+    const an = Number(av);
+    const bn = Number(bv);
+
+    // 以數字排序（空值排最後）
+    const aEmpty = av === "" || av === null || typeof av === "undefined";
+    const bEmpty = bv === "" || bv === null || typeof bv === "undefined";
+    if (aEmpty && bEmpty) return 0;
+    if (aEmpty) return 1;
+    if (bEmpty) return -1;
+
+    const cmp = (Number.isNaN(an) || Number.isNaN(bn)) ? String(av).localeCompare(String(bv)) : (an - bn);
+    return sortAsc ? cmp : -cmp;
+  });
+
+  renderTable();
+}
+
+// 綁定 sortable 表頭
+document.querySelectorAll("th.sortable").forEach(th => {
+  th.addEventListener("click", () => {
+    const key = th.getAttribute("data-key");
+    sortBy(key);
+  });
+});
 loadData();
 </script>
 
