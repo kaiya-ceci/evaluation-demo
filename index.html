@@ -875,10 +875,13 @@
             total += (cd.scoreA + cd.scoreB);
           }
 
+          const avg = total / 5;   // ⭐ 新增：計算平均分
+
           await updateDoc(doc(db, "scores", EVAL_ID), {
             submitted: true,
             submittedAt: serverTimestamp(),
             totalScore: total,
+            avgScore: avg,         // ⭐ 新增：寫入資料庫
             updatedAt: serverTimestamp()
           });
 
