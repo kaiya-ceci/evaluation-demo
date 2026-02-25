@@ -177,6 +177,8 @@
 
 <button id="btnExport" disabled>下載 CSV</button>
 <button id="btnToggleAB" disabled>展開 A/B</button>
+<button id="btnReload" disabled>重新載入資料</button>
+<span id="reloadMsg" style="margin-left:8px; color:#666;"></span>
 <div class="infoBox">
   <strong>📌 使用說明</strong>
   <ul>
@@ -230,6 +232,8 @@ const headerRow = document.getElementById("headerRow");
 
 const btnExport = document.getElementById("btnExport");
 const btnToggleAB = document.getElementById("btnToggleAB");
+const btnReload = document.getElementById("btnReload");
+const reloadMsg = document.getElementById("reloadMsg");
 
 const btnLogin = document.getElementById("btnLogin");
 const btnLogout = document.getElementById("btnLogout");
@@ -273,6 +277,8 @@ onAuthStateChanged(auth, async (user) => {
     btnLogout.style.display = "none";
     btnExport.disabled = true;
     btnToggleAB.disabled = true;
+    btnReload.disabled = true;
+    reloadMsg.textContent = "";
 
     exportRows = [];
     tableBody.innerHTML = "";
@@ -285,6 +291,7 @@ onAuthStateChanged(auth, async (user) => {
   btnLogout.style.display = "";
   btnExport.disabled = false;
   btnToggleAB.disabled = false;
+  btnReload.disabled = false;
 
   renderHeader();
   await loadData();
@@ -482,6 +489,26 @@ btnToggleAB.addEventListener("click", () => {
   renderTable();
   updateSortIcons();
 });
+
+  btnReload.addEventListener("click", async () => {
+  if (!auth.currentUser || auth.currentUser.isAnonymous) return;
+
+  btnReload.disabled = true;
+  reloadMsg.textContent = "重新載入中…";
+
+  try {
+    await loadData();                 // ✅ 直接重抓 Firestore
+    reloadMsg.textContent = "已更新";
+  } catch (e) {
+    console.error(e);
+    reloadMsg.textContent = "更新失敗（請看 Console）";
+  } finally {
+    btnReload.disabled = false;
+    setTimeout(() => { reloadMsg.textContent = ""; }, 1500);
+  }
+});
+
+  
 
 /** ========= CSV export ========= */
 btnExport.addEventListener("click", () => {
