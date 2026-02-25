@@ -1002,7 +1002,7 @@
           renderQuestionContent();
           renderScoreTitle();
 
-          setStatus("題庫已載入。請先填科室/職稱/姓名，按「開始評分」後再評分", true);
+          setStatus("題庫已載入。請先填科室/職稱/姓名，按「開始評分」後再評分。", true);
         } catch (err) {
           console.error(err);
           setStatus("題庫載入失敗：請確認 questions.json 路徑與是否有上傳到 GitHub", false);
