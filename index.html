@@ -693,6 +693,72 @@ document.getElementById("btnSave").addEventListener("click", async () => {
     e.preventDefault();
     e.returnValue = ""; // 這行是觸發瀏覽器內建提示的關鍵
   });
+
+  // --- 確認送出 ---
+  elBtnSubmit.addEventListener("click", async () => {
+  if (!EVAL_ID) {
+    setStatus("請先按「開始評分」建立評分紀錄", false);
+    return;
+  }
+
+  // 送出後不允許重送
+  if (isSubmitted || IS_LOCKED) {
+    setStatus("已送出（已鎖定）", true);
+    return;
+  }
+
+  // 再保險確認一次是否五類都完成
+  await refreshSummary();
+  if (elBtnSubmit.disabled) {
+    setStatus("需五類皆填 A/B 才能送出", false);
+    return;
+  }
+
+  if (!confirm("確認送出後將鎖定，無法再修改。確定送出？")) return;
+
+  try {
+    await initAuth(); // ✅ 匿名登入保險
+
+    // 重新讀一次確保拿到最新 categories，順便算 totalScore
+    const snap = await getDoc(doc(db, "scores", EVAL_ID));
+    if (!snap.exists()) {
+      setStatus("找不到評分紀錄，無法送出", false);
+      return;
+    }
+
+    const data = snap.data();
+    const cats = data.categories || {};
+
+    let total = 0;
+    for (const cat of CATEGORIES) {
+      const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
+      if (!isCategoryComplete(cd)) {
+        setStatus(`「${cat}」尚未完成，請先填 A/B`, false);
+        return;
+      }
+      total += (cd.scoreA + cd.scoreB);
+    }
+
+    await updateDoc(doc(db, "scores", EVAL_ID), {
+      submitted: true,
+      submittedAt: serverTimestamp(),
+      totalScore: total,
+      updatedAt: serverTimestamp()
+    });
+
+    // UI 鎖定
+    IS_LOCKED = true;
+    isSubmitted = true;
+    setScoringEnabled(false);
+    elBtnSubmit.disabled = true;
+
+    await refreshSummary();
+    setStatus("✅ 已送出並鎖定完成，感謝評分！", true);
+  } catch (err) {
+    console.error(err);
+    setStatus("送出失敗，請看 Console", false);
+  }
+});
   
 
   
