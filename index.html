@@ -450,7 +450,7 @@
             </div>
     
             <div class="label">評語（A未達 50 必填，最多 200 字）</div>
-            <textarea id="comment" placeholder="如有明顯錯誤，請提供題號，感謝！" maxlength="200"></textarea>
+            <textarea id="comment" placeholder="如有明顯錯誤，請提供題號或說明，感謝！" maxlength="200"></textarea>
             <div class="hint" style="text-align:right;">
               <span id="commentCount">0</span>/200
             </div>
@@ -880,7 +880,7 @@
         
         // ✅ 新規則：若 A ≠ 50，評語必填（B 不檢查）
         if (v.a !== null && v.a !== 50 && comment.length === 0) {
-          setStatus("內容正確性 A 不是 50 分時，評語為必填（請提供相關資訊）", false);
+          setStatus("內容正確性 A 不是 50 分時，評語為必填（請提供題號或說明）", false);
           elComment.focus();
           return;
         }
