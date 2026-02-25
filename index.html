@@ -880,7 +880,7 @@
         
         // ✅ 新規則：若 A ≠ 50，評語必填（B 不檢查）
         if (v.a !== null && v.a !== 50 && comment.length === 0) {
-          setStatus("內容正確性 A 不是 50 分時，評語為必填（請說明錯在哪裡）", false);
+          setStatus("內容正確性 A 不是 50 分時，評語為必填（請提供相關資訊）", false);
           elComment.focus();
           return;
         }
