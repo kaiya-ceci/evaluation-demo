@@ -349,9 +349,9 @@ async function loadData() {
     renderTable();
     updateSortIcons();
 
-    // ✅ 顯示資料筆數 + 最後更新時間
+    // ✅ 顯示資料筆數 + 最近載入時間
     elStats.textContent = `資料筆數：${exportRows.length} 筆`;
-    elLastUpdated.textContent = `最後更新：${formatNow()}`;
+    elLastUpdated.textContent = `最近載入時間：${formatNow()}`;
 
 
     const colCount = 3 + CAT_META.length * (showAB ? 4 : 2) + 2;
