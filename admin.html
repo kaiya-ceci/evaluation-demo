@@ -497,7 +497,7 @@ btnExport.addEventListener("click", () => {
     }
     headers.push(`${name}(A+B)`, `${name}評語`);
   });
-  headers.push("總分","送出時間");
+  headers.push("總分","平均分","送出時間");
 
   const rows = exportRows.map(r => {
     const line = [r.name, r.dept, r.title];
@@ -505,7 +505,7 @@ btnExport.addEventListener("click", () => {
       if (showAB) line.push(r[name+"_A"] ?? "", r[name+"_B"] ?? "");
       line.push(r[name+"_SUM"] ?? "", r[name+"_comment"] ?? "");
     });
-    line.push(r.total ?? "", r.time ?? "");
+    line.push(r.total ?? "", r.avg ?? "", r.time ?? "");
     return line;
   });
 
