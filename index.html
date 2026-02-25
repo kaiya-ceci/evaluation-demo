@@ -107,26 +107,53 @@
       background: #fff;
     }
 
-    @media (max-width: 720px) {
-      .row { flex-direction: column; }
-      .left, .right { width: 100%; min-width: 0; }
-      .grid2 { grid-template-columns: 1fr !important; }
-      .grid2 > div { min-width: 0; }
-      select, input, textarea { width: 100%; min-width: 0; }
-      .scorePane{
-        position: static;
+    @media (max-width: 900px) {
+      /* 讓外框不要看起來擠成一條 */
+      .container{
+        padding: 14px 12px;
       }
-      .answerPane{
-        max-height: none;
-      }
-      /* ✅ 三欄在手機改成直向 */
+    
+      /* ✅ 三欄 → 單欄（重點！不要用 flex，直接改 grid 一欄最不會怪） */
       .row3{
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
       }
+    
+      /* 卡片本身撐滿 */
+      .col{
+        width: 100%;
+      }
+    
+      /* 讓所有輸入元件 100% */
+      select, input, textarea, button{
+        width: 100%;
+        max-width: 100%;
+      }
+    
+      /* 左欄題目清單：手機不要太長，不然一直滑 */
+      .col.left #qList{
+        max-height: 42vh;
+        overflow: auto;
+      }
+    
+      /* ✅ 中欄答案：手機不要固定 70vh，改成自然高度 + 上限 */
       .col.mid .answerPane{
-        height: auto;         /* 手機不固定高度 */
+        height: auto;
+        max-height: 45vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+    
+      /* ✅ 右欄評分：手機不要 sticky（不然會卡畫面） */
+      .col.right .scorePane{
+        position: static;
+        top: auto;
+      }
+    
+      /* grid2：手機改單欄（你原本有，但我也一起保險寫進來） */
+      .grid2{
+        grid-template-columns: 1fr !important;
       }
     }
     .container * { box-sizing: border-box; }
