@@ -119,28 +119,48 @@
       .answerPane{
         max-height: none;
       }
+      /* ✅ 三欄在手機改成直向 */
+      .row3{
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .col.mid .answerPane{
+        height: auto;         /* 手機不固定高度 */
+      }
     }
     .container * { box-sizing: border-box; }
-    
-    /* 右欄：分成上下兩塊（答案捲動、評分固定） */
-    .col.right{
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+
+    /* =========================
+       ✅ 三欄版面：題目｜答案｜評分
+       ========================= */
+    .row3{
+      display: grid;
+      grid-template-columns: 1.05fr 1.15fr 0.9fr; /* 左中右比例，可再調 */
+      gap: 16px;
+      align-items: start;
     }
     
-    /* ✅ 答案區固定高度、內容可捲動 */
-    .answerPane{
-      flex: 1 1 auto;
-      min-height: 260px;          /* 你想更大可調 */
-      max-height: 42vh;           /* 控制答案區最多佔畫面高度 */
+    .col.mid { min-width: 0; }
+    .col.left, .col.right { min-width: 0; }
+    
+    /* 左欄題目清單捲動 */
+    .col.left #qList{
+      max-height: 70vh;
       overflow: auto;
-      padding-right: 6px;         /* 避免捲軸壓到文字 */
     }
     
-    /* ✅ 評分區固定（跟著視窗滑動時，不會跑掉） */
-    .scorePane{
-      flex: 0 0 auto;
+    /* 中欄答案固定高度捲動 */
+    .col.mid .answerPane{
+      height: 70vh;              /* ✅ 固定高度 → 不會因答案長短推動評分 */
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 6px;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* 右欄評分 sticky */
+    .col.right .scorePane{
       position: sticky;
       top: 12px;
     }
@@ -193,33 +213,39 @@
     <div class="label">分類</div>
     <select id="category"></select>
 
-    <div class="row" style="margin-top: 12px;">
+    <div class="row3" style="margin-top: 12px;">
+    
+      <!-- 左欄：題目清單（原封不動） -->
       <div class="col left">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <strong>題目清單</strong>
           <span class="hint">可點選上方選單切換</span>
         </div>
-        <div id="qList" style="margin-top: 10px; max-height: 70vh; overflow: auto;"></div>
+        <div id="qList" style="margin-top: 10px;"></div>
       </div>
-
-      <div class="col right">
-        <!-- ✅ 答案區：固定高度 + 內部捲動 -->
+    
+      <!-- ✅ 中欄：答案區（從原本右欄搬過來） -->
+      <div class="col mid">
         <div class="answerPane">
           <div class="label">簡答</div>
           <div id="aText" class="contentCard"></div>
-  
+    
           <div class="label">詳答</div>
           <div id="aLongText" class="contentCard"></div>
         </div>
-
-        <!-- ✅ 評分區：固定位置（sticky） -->
+      </div>
+    
+      <!-- ✅ 右欄：評分區（保留你原本 scorePane 裡的所有內容） -->
+      <div class="col right">
         <div class="scorePane">
+    
+          <!-- ===== 下面整包：你原本 scorePane 裡的內容原封不動貼進來 ===== -->
           <div class="scoreCard">
             <div class="scoreCardTitle">
               <span id="scoreTitle">本類評分</span>
               <span class="hint">請針對本類型表現綜合評分</span>
             </div>
-  
+    
             <div class="grid2" style="margin-top:10px;">
               <div>
                 <div class="label">內容正確性 A（0~50）</div>
@@ -230,23 +256,23 @@
                 <input id="scoreB" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
               </div>
             </div>
-  
+    
             <div class="label">評語（可空白，最多 200 字）</div>
             <textarea id="comment" placeholder="可留空" maxlength="200"></textarea>
             <div class="hint" style="text-align:right;">
               <span id="commentCount">0</span>/200
             </div>
-  
+    
             <div style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
               <button id="btnSave" type="button">儲存本類結果</button>
               <button id="btnClear" type="button">清空本題輸入</button>
             </div>
           </div>
-  
+    
           <div class="sectionCard" style="margin-top:12px; border-color:#eee;">
             <strong>評分總覽</strong>
             <div class="hint" id="progressText" style="margin-top:6px;">尚未開始</div>
-  
+    
             <div class="grid2" style="margin-top:10px;">
               <div>
                 <div class="label">總分（5A+5B）</div>
@@ -257,19 +283,22 @@
                 <div id="doneCount" style="font-size:20px; font-weight:700;">0/5</div>
               </div>
             </div>
-  
+    
             <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
               <button id="btnSubmit" type="button">確認送出（完成後鎖定）</button>
               <span class="hint">需五類皆填 A/B 才能送出</span>
             </div>
           </div>
-  
+    
           <div class="sectionCard">
             <div class="status" id="status"></div>
           </div>
+          <!-- ===== 上面整包：原本 scorePane 內容結束 ===== -->
+    
         </div>
       </div>
-     </div>
+    
+    </div>
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
