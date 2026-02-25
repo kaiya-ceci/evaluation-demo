@@ -33,27 +33,9 @@
   
 
 <table id="dataTable">
-  <thead>
-    <tr>
-      <th>姓名</th>
-      <th>科室</th>
-      <th>職稱</th>
-      <th data-key="化糞池處理" class="sortable">化糞池處理 ↕</th>
-      <th data-key="政策與法規" class="sortable">政策與法規 ↕</th>
-      <th data-key="施工與技術" class="sortable">施工與技術 ↕</th>
-      <th data-key="接管流程與期限" class="sortable">接管流程與期限 ↕</th>
-      <th data-key="費用與補助" class="sortable">費用與補助 ↕</th>
-      <th>化糞池處理評語</th>
-      <th>政策與法規評語</th>
-      <th>施工與技術評語</th>
-      <th>接管流程與期限評語</th>
-      <th>費用與補助評語</th>
-      <th data-key="total" class="sortable">總分 ↕</th>
-      <th data-key="time" class="sortable">送出時間 ↕</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<thead>
+  <tr id="headerRow"></tr>
+</thead>
 <script type="module">
 import { 
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
@@ -151,6 +133,9 @@ onAuthStateChanged(auth, async (user) => {
   btnToggleAB.disabled = false;
 
   loadData();
+  renderHeader();
+  renderTable();
+  updateSortIcons();
 });
 
 /** ========= Load ========= */
@@ -210,6 +195,45 @@ function td(text, preWrap = false) {
   return cell;
 }
 
+const headerRow = document.getElementById("headerRow");
+
+function renderHeader() {
+  headerRow.innerHTML = "";
+
+  const addTh = (text, key = null) => {
+    const th = document.createElement("th");
+    th.textContent = text;
+    if (key) {
+      th.classList.add("sortable");
+      th.dataset.key = key;
+      th.addEventListener("click", () => sortBy(key));
+    }
+    headerRow.appendChild(th);
+  };
+
+  // 固定欄
+  addTh("姓名");
+  addTh("科室");
+  addTh("職稱");
+
+  // 展開 A/B（10欄，不做排序）
+  if (showAB) {
+    CATEGORIES.forEach(cat => {
+      addTh(`${cat} A`);
+      addTh(`${cat} B`);
+    });
+  }
+
+  // A+B 欄（可排序）
+  CATEGORIES.forEach(cat => addTh(`${cat} ↕`, cat));
+
+  // 評語
+  CATEGORIES.forEach(cat => addTh(`${cat}評語`));
+
+  // 總分（可排序）、送出時間（你要排序的話也可以加 key）
+  addTh("總分 ↕", "total");
+  addTh("送出時間");
+}
 function renderTable() {
   tableBody.innerHTML = "";
 
@@ -296,6 +320,8 @@ document.querySelectorAll("th.sortable").forEach(th => {
 btnToggleAB.addEventListener("click", () => {
   showAB = !showAB;
   btnToggleAB.textContent = showAB ? "收起 A/B" : "展開 A/B";
+
+  renderHeader();
   renderTable();
   updateSortIcons();
 });
