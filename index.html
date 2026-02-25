@@ -5,22 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>臺中市水利局AI小幫手測試結果評分</title>
   <style>
-    .row { display: flex; 
-          gap: 16px; 
-          align-items: flex-start; }    
-    .left, .right {
-      flex: 1;
-      min-width: 0;
-    }
+    .row { display: flex; gap: 16px; align-items: flex-start; }
+    .left, .right { flex: 1; min-width: 0; }
     select, input, textarea, button { font-size: 14px; padding: 8px; }
     textarea { width: 100%; min-height: 90px; }
     .qitem { padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
     .qitem:hover { background: #fafafa; }
-    .qitem.active { border-color: #4f46e5; background: #eef2ff; }    
+    .qitem.active { border-color: #f1bb63; background: #fffbee; }
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .hint { color: #666; font-size: 12px; margin-top: 8px; }
-    .status { margin-top: 10px; }
-    /* 整體背景與版面 */
+    .status { margin-top: 0; padding: 0; border: 0; background: transparent; }
+
     body {
       font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
       margin: 0;
@@ -29,12 +24,12 @@
     }
     h2 { margin-bottom: 10px; }
     hr { border: 0; border-top: 1px solid #e5e7eb; }
+
     .container {
-      max-width: 1400px;      /* 不要太寬 */
-      margin: 0 auto;         /* 置中 */
-      padding: 24px 20px;     /* 左右內縮 */
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px 20px;
     }
-    /* 卡片質感 */
     .col {
       background: #fff;
       border: 1px solid #e5e7eb;
@@ -42,27 +37,14 @@
       padding: 16px;
       border-radius: 14px;
     }
-    .left, .right { border-radius: 14px; }
-    
-    /* 左邊題目卡片更像清單 */
-    .qitem {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-    }
-    .qitem.active {
-      border-color: #f1bb63;
-      background: #fffbee;
-    }
-    
-    /* 小標題 */
+
     .label {
       font-weight: 600;
       color: #374151;
-      margin-top: 14px; 
+      margin-top: 14px;
       margin-bottom: 6px;
     }
-    
-    /* 開始評分列 */
+
     .startRow{
       margin-top: 12px;
       display:flex;
@@ -85,10 +67,8 @@
       color:#b91c1c;
       border:1px solid #fecaca;
     }
-    
-    /* 右側「本類評分」卡片 */
+
     .scoreCard{
-      /* 讓本類評分跟其他卡片同一套，只是底色淡灰 */
       background:#f0fcff;
       border:1px solid #0ca59c;
       border-radius:14px;
@@ -103,31 +83,7 @@
       font-weight: 800;
       color:#111827;
     }
-    
-    /* 右下角 status 也稍微美化 */
-    .status{
-      margin-top: 0;   /* 交給外層 sectionCard 的 margin-top */
-      padding: 0;      /* 交給外層 sectionCard 的 padding */
-      border: 0;
-      background: transparent;
-    }
-    /* 小螢幕：兩欄改一欄，避免基本資料被擠爆 */
-    @media (max-width: 720px) {
-      /* 整頁改成上下 */
-      .row { flex-direction: column; }
-      .left, .right { width: 100%; min-width: 0; }
-    
-      /* 基本資料的兩欄變一欄 */
-      .grid2 { grid-template-columns: 1fr !important; }
-    
-      /* 讓 select/input 不要撐爆容器 */
-      .grid2 > div { min-width: 0; }
-      select, input, textarea { width: 100%; min-width: 0; }
-    }
-    .container * {
-      box-sizing: border-box;
-    }
-    /* 統一：右側各段落都用同一種卡片感（含下方總覽/狀態） */
+
     .sectionCard{
       background:#fff;
       border:1px solid #e5e7eb;
@@ -136,14 +92,9 @@
       margin-top:16px;
       box-shadow:0 6px 18px rgba(17, 24, 39, 0.06);
     }
-    
-    /* 本類評分想要淡灰底（保留你的視覺層次） */
-    .sectionCard.light{
-      background:#f8fafc;
-    }
-    /* 題目/簡答/詳答 卡片：讓字不要貼邊 */
+
     #aText, #aLongText{
-      padding: 14px 16px !important;   /* 內距加大 */
+      padding: 14px 16px !important;
       line-height: 1.6;
     }
 
@@ -155,615 +106,595 @@
       min-height: 70px;
       background: #fff;
     }
+
+    @media (max-width: 720px) {
+      .row { flex-direction: column; }
+      .left, .right { width: 100%; min-width: 0; }
+      .grid2 { grid-template-columns: 1fr !important; }
+      .grid2 > div { min-width: 0; }
+      select, input, textarea { width: 100%; min-width: 0; }
+    }
+    .container * { box-sizing: border-box; }
   </style>
 </head>
 <body>
   <div class="container">
 
-<h2>臺中市水利局AI小幫手測試結果評分</h2>
+    <h2>臺中市水利局AI小幫手測試結果評分</h2>
 
-<h3 style="margin-top:30px;">評分者基本資料</h3>
+    <h3 style="margin-top:30px;">評分者基本資料</h3>
 
-<div class="grid2" style="margin-top: 8px;">
-  <div>
-    <div class="label">科室（必選）</div>
-    <select id="dept" style="width:100%;">
-      <option value="">請選擇</option>
-      <option value="高階主管">高階主管</option>
-      <option value="污水工程科">污水工程科</option>
-      <option value="污水設施科">污水設施科</option>
-      <option value="污水營運科">污水營運科</option>
-    </select>
-  </div>
-  <div>
-    <div class="label">職稱（必填）</div>
-    <input id="title" type="text" placeholder="例如：工程司" style="width:100%;" />
-  </div>
-</div>
-
-<div style="margin-top: 10px;">
-  <div class="label">姓名（必填）</div>
-  <input id="name" type="text" placeholder="例如：王小明" style="width:100%;" />
-</div>
-
-<div class="startRow">
-  <button id="btnStart" type="button">開始評分</button>
-  <span class="hint">基本資料填寫完成才可開始評分</span>
-  <span id="startStatus" class="miniStatus"></span>
-</div>
-
-<hr style="margin: 14px 0; border:0; border-top:1px solid #eee;" />
-
-<div class="label">分類</div>
-<select id="category"></select>
-
-
-<div class="row" style="margin-top: 12px;">
-  <div class="col left">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <strong>題目清單</strong>
-      <span class="hint">可點選上方選單切換</span>
-    </div>
-    <div id="qList" style="margin-top: 10px; max-height: 70vh; overflow: auto;"></div>
-  </div>
-
-  <div class="col right">
-    
-    <div class="label">簡答</div>
-    <div id="aText" class="contentCard"></div>
-    
-    <div class="label">詳答</div>
-    <div id="aLongText" class="contentCard"></div>
-
-    <div class="scoreCard">
-      <div class="scoreCardTitle">
-        <span id="scoreTitle">本類評分</span>
-        <span class="hint">請針對本類型表現綜合評分</span>
+    <div class="grid2" style="margin-top: 8px;">
+      <div>
+        <div class="label">科室（必選）</div>
+        <select id="dept" style="width:100%;">
+          <option value="">請選擇</option>
+          <option value="高階主管">高階主管</option>
+          <option value="污水工程科">污水工程科</option>
+          <option value="污水設施科">污水設施科</option>
+          <option value="污水營運科">污水營運科</option>
+        </select>
       </div>
-    
-      <div class="grid2" style="margin-top:10px;">
-        <div>
-          <div class="label">內容正確性 A（0~50）</div>
-          <input id="scoreA" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
-        </div>
-        <div>
-          <div class="label">語意完整性 B（0~50）</div>
-          <input id="scoreB" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
-        </div>
-      </div>
-    
-     <div class="label">評語（可空白，最多 200 字）</div>
-     <textarea id="comment" placeholder="可留空" maxlength="200"></textarea>
-     <div class="hint" style="text-align:right;">
-       <span id="commentCount">0</span>/200
-     </div>
-    
-      <div style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
-        <button id="btnSave">儲存本類結果</button>
-        <button id="btnClear" type="button">清空本題輸入</button>
+      <div>
+        <div class="label">職稱（必填）</div>
+        <input id="title" type="text" placeholder="例如：工程司" style="width:100%;" />
       </div>
     </div>
-    <div class="sectionCard" style="margin-top:12px; border-color:#eee;">
-      <strong>評分總覽</strong>
-      <div class="hint" id="progressText" style="margin-top:6px;">尚未開始</div>
-    
-      <div class="grid2" style="margin-top:10px;">
-        <div>
-          <div class="label">總分（5A+5B）</div>
-          <div id="totalScore" style="font-size:20px; font-weight:700;">-</div>
+
+    <div style="margin-top: 10px;">
+      <div class="label">姓名（必填）</div>
+      <input id="name" type="text" placeholder="例如：王小明" style="width:100%;" />
+    </div>
+
+    <div class="startRow">
+      <button id="btnStart" type="button">開始評分</button>
+      <span class="hint">基本資料填寫完成才可開始評分</span>
+      <span id="startStatus" class="miniStatus"></span>
+    </div>
+
+    <hr style="margin: 14px 0; border:0; border-top:1px solid #eee;" />
+
+    <div class="label">分類</div>
+    <select id="category"></select>
+
+    <div class="row" style="margin-top: 12px;">
+      <div class="col left">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong>題目清單</strong>
+          <span class="hint">可點選上方選單切換</span>
         </div>
-        <div>
-          <div class="label">完成度</div>
-          <div id="doneCount" style="font-size:20px; font-weight:700;">0/5</div>
-        </div>
+        <div id="qList" style="margin-top: 10px; max-height: 70vh; overflow: auto;"></div>
       </div>
-    
-      <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
-        <button id="btnSubmit" type="button">確認送出（完成後鎖定）</button>
-        <span class="hint">需五類皆填 A/B 才能送出</span>
+
+      <div class="col right">
+        <div class="label">簡答</div>
+        <div id="aText" class="contentCard"></div>
+
+        <div class="label">詳答</div>
+        <div id="aLongText" class="contentCard"></div>
+
+        <div class="scoreCard">
+          <div class="scoreCardTitle">
+            <span id="scoreTitle">本類評分</span>
+            <span class="hint">請針對本類型表現綜合評分</span>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <div>
+              <div class="label">內容正確性 A（0~50）</div>
+              <input id="scoreA" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
+            </div>
+            <div>
+              <div class="label">語意完整性 B（0~50）</div>
+              <input id="scoreB" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
+            </div>
+          </div>
+
+          <div class="label">評語（可空白，最多 200 字）</div>
+          <textarea id="comment" placeholder="可留空" maxlength="200"></textarea>
+          <div class="hint" style="text-align:right;">
+            <span id="commentCount">0</span>/200
+          </div>
+
+          <div style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
+            <button id="btnSave" type="button">儲存本類結果</button>
+            <button id="btnClear" type="button">清空本題輸入</button>
+          </div>
+        </div>
+
+        <div class="sectionCard" style="margin-top:12px; border-color:#eee;">
+          <strong>評分總覽</strong>
+          <div class="hint" id="progressText" style="margin-top:6px;">尚未開始</div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <div>
+              <div class="label">總分（5A+5B）</div>
+              <div id="totalScore" style="font-size:20px; font-weight:700;">-</div>
+            </div>
+            <div>
+              <div class="label">完成度</div>
+              <div id="doneCount" style="font-size:20px; font-weight:700;">0/5</div>
+            </div>
+          </div>
+
+          <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+            <button id="btnSubmit" type="button">確認送出（完成後鎖定）</button>
+            <span class="hint">需五類皆填 A/B 才能送出</span>
+          </div>
+        </div>
+
+        <div class="sectionCard">
+          <div class="status" id="status"></div>
+        </div>
       </div>
     </div>
-    
-    <div class="sectionCard">
-      <div class="status" id="status"></div>
-    </div>  
-  </div> <!-- col right -->
-</div>  <!-- row -->
 
-<script type="module">
-  let IS_LOCKED = false; // 送出後 = true
-  import { initializeApp } 
-  from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+      import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+      import {
+        getFirestore, doc, getDoc, updateDoc, serverTimestamp,
+        addDoc, collection
+      } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-  import { getAuth, signInAnonymously } 
-   from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+      // ===== Firebase 設定 =====
+      const firebaseConfig = {
+        apiKey: "AIzaSyBqSDWpIR_Bm2CVdnObkkuopOBrxgoXlH0",
+        authDomain: "tcswg-ai-qa.firebaseapp.com",
+        projectId: "tcswg-ai-qa"
+      };
 
-  import { 
-    getFirestore, doc, getDoc, updateDoc, serverTimestamp,
-    addDoc, collection 
-  } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
 
-  // Firebase 設定
-  const firebaseConfig = {
-    apiKey: "AIzaSyBqSDWpIR_Bm2CVdnObkkuopOBrxgoXlH0",
-    authDomain: "tcswg-ai-qa.firebaseapp.com",
-    projectId: "tcswg-ai-qa"
-  };
+      // ===== 狀態 =====
+      let EVAL_ID = null;
+      let IS_LOCKED = false;
+      let hasUnsavedOrUnsubmittedWork = false;
+      let isSubmitted = false;
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
+      // 分類
+      const CATEGORIES = ["化糞池處理","政策與法規","施工與技術","接管流程與期限","費用與補助"];
+      const CATEGORY_KEYS = {
+        "化糞池處理": "septic",
+        "接管流程與期限": "connection",
+        "施工與技術": "construction",
+        "費用與補助": "subsidy",
+        "政策與法規": "policy"
+      };
 
-  async function initAuth() {
-    // 已登入就不用再登
-    if (auth.currentUser) return;
-    await signInAnonymously(auth);
-  }
-  let EVAL_ID = null;
-  let hasUnsavedOrUnsubmittedWork = false;
-  let isSubmitted = false;
+      let QUESTIONS = {};
+      let currentCategory = CATEGORIES[0];
+      let currentQuestion = null;
 
+      // ===== DOM =====
+      const elCat = document.getElementById("category");
+      const elList = document.getElementById("qList");
+      const elA = document.getElementById("aText");
+      const elALong = document.getElementById("aLongText");
+      const elScoreA = document.getElementById("scoreA");
+      const elScoreB = document.getElementById("scoreB");
+      const elComment = document.getElementById("comment");
+      const elCommentCount = document.getElementById("commentCount");
+      const elStatus = document.getElementById("status");
+      const elDept = document.getElementById("dept");
+      const elTitle = document.getElementById("title");
+      const elName = document.getElementById("name");
+      const elBtnStart = document.getElementById("btnStart");
+      const elProgressText = document.getElementById("progressText");
+      const elTotalScore = document.getElementById("totalScore");
+      const elDoneCount = document.getElementById("doneCount");
+      const elBtnSubmit = document.getElementById("btnSubmit");
+      const elStartStatus = document.getElementById("startStatus");
+      const elScoreTitle = document.getElementById("scoreTitle");
 
+      // ===== Auth：確保匿名登入完成 =====
+      async function initAuth() {
+        if (auth.currentUser) return;
 
-  // 分類陣列
-  const CATEGORIES = [
-    "化糞池處理",
-    "政策與法規",
-    "施工與技術",
-    "接管流程與期限",
-    "費用與補助"    
-  ];
-  
-  // 分類代碼
-  const CATEGORY_KEYS = {
-    "化糞池處理": "septic",
-    "接管流程與期限": "connection",
-    "施工與技術": "construction",
-    "費用與補助": "subsidy",
-    "政策與法規": "policy"
-  };
+        await signInAnonymously(auth);
 
-  let QUESTIONS = {};
-
-  async function loadQuestions() {
-    const res = await fetch("./questions.json");
-    if (!res.ok) throw new Error("讀取 questions.json 失敗");
-    QUESTIONS = await res.json();
-  }
-
-
-  // --- UI 狀態 ---
-  let currentCategory = CATEGORIES[0];
-  let currentQuestion = null;
-
-
-  const elCat = document.getElementById("category");
-  const elList = document.getElementById("qList");
-  const elA = document.getElementById("aText");
-  const elALong = document.getElementById("aLongText");
-  const elScoreA = document.getElementById("scoreA");
-  const elScoreB = document.getElementById("scoreB");
-  const elComment = document.getElementById("comment");
-  const elCommentCount = document.getElementById("commentCount");
-  const elStatus = document.getElementById("status");
-  const elDept = document.getElementById("dept");
-  const elTitle = document.getElementById("title");
-  const elName = document.getElementById("name");
-  const elBtnStart = document.getElementById("btnStart");
-  const elProgressText = document.getElementById("progressText");
-  const elTotalScore = document.getElementById("totalScore");
-  const elDoneCount = document.getElementById("doneCount");
-  const elBtnSubmit = document.getElementById("btnSubmit");
-  const elStartStatus = document.getElementById("startStatus");
-  const elScoreTitle = document.getElementById("scoreTitle");
-
-  function setScoringEnabled(enabled) {
-    elCat.disabled = !enabled;
-    document.getElementById("btnSave").disabled = !enabled;
-    document.getElementById("btnClear").disabled = !enabled;
-    elScoreA.disabled = !enabled;
-    elScoreB.disabled = !enabled;
-    elComment.disabled = !enabled;
-  }
-  
-  function validateRaterInfo() {
-    const dept = elDept.value.trim();
-    const title = elTitle.value.trim();
-    const name = elName.value.trim();
-  
-    if (!dept) return { ok:false, msg:"請先選擇科室" };
-    if (!title) return { ok:false, msg:"請先填寫職稱" };
-    if (!name) return { ok:false, msg:"請先填寫姓名" };
-  
-    return { ok:true, dept, title, name };
-  }
-
-
-
-  async function loadCategoryInputs() {
-    // 預設清空
-    elScoreA.value = "";
-    elScoreB.value = "";
-    elComment.value = "";
-  
-    try {
-      const snap = await getDoc(doc(db, "scores", EVAL_ID));
-      if (!snap.exists()) return;
-  
-      const data = snap.data();
-      console.log("currentCategory =", currentCategory);
-      console.log("categories keys =", Object.keys(data?.categories || {}), data?.categories);
-      const catData = 
-        data?.categories?.[currentCategory] ||
-        data?.categories?.[CATEGORY_KEYS[currentCategory]];
-      
-      if (!catData) {
-        console.log("❗找不到這個分類的資料");
-        return;
+        if (!auth.currentUser) {
+          await new Promise((resolve) => {
+            const unsub = onAuthStateChanged(auth, (u) => {
+              if (u) { unsub(); resolve(); }
+            });
+          });
+        }
       }
-  
-      // 帶回既有資料
-      elScoreA.value = (catData.scoreA ?? "") === null ? "" : (catData.scoreA ?? "");
-      elScoreB.value = (catData.scoreB ?? "") === null ? "" : (catData.scoreB ?? "");
-      elComment.value = catData.comment ?? "";
-      updateCommentCount();
-    } catch (err) {
-      console.error(err);
-      setStatus("讀取既有分數失敗（請看 Console）", false);
-    }
-  }
 
-    
-  function setStatus(msg, ok=true) {
-    elStatus.innerHTML = ok ? `<span style="color:green;">✅ ${msg}</span>` : `<span style="color:#b91c1c;">❌ ${msg}</span>`;
-  }
-  function updateCommentCount() {
-    if (!elCommentCount) return;
-    const len = (elComment.value || "").length;
-    elCommentCount.textContent = String(len);
-  }
-  function setStartStatus(msg, ok=true){
-    if (!elStartStatus) return;
-    elStartStatus.textContent = msg || "";
-    elStartStatus.className = "miniStatus " + (ok ? "ok" : "bad");
-  }
+      function setStatus(msg, ok=true) {
+        elStatus.innerHTML = ok
+          ? `<span style="color:green;">✅ ${msg}</span>`
+          : `<span style="color:#b91c1c;">❌ ${msg}</span>`;
+      }
 
-  function renderCategoryOptions() {
-    elCat.innerHTML = CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("");
-    elCat.value = currentCategory;
-  }
+      function setStartStatus(msg, ok=true){
+        elStartStatus.textContent = msg || "";
+        elStartStatus.className = "miniStatus " + (ok ? "ok" : "bad");
+      }
 
-  function renderQuestionList() {
-    const qs = QUESTIONS[currentCategory] || [];
-    elList.innerHTML = "";
-    qs.forEach(q => {
-      const div = document.createElement("div");
-      div.className = "qitem" + (q.id === currentQuestion?.id ? " active" : "");
-      div.style.cursor = IS_LOCKED ? "default" : "pointer";
-      div.innerHTML = `<div><strong>${q.id}</strong></div><div style="margin-top:4px; white-space:pre-wrap;">${q.q}</div>`;
-      div.onclick = () => {
-        currentQuestion = q;
+      function updateCommentCount() {
+        const len = (elComment.value || "").length;
+        elCommentCount.textContent = String(len);
+      }
+
+      function setScoringEnabled(enabled) {
+        elCat.disabled = !enabled;
+        document.getElementById("btnSave").disabled = !enabled;
+        document.getElementById("btnClear").disabled = !enabled;
+        elScoreA.disabled = !enabled;
+        elScoreB.disabled = !enabled;
+        elComment.disabled = !enabled;
+      }
+
+      function validateRaterInfo() {
+        const dept = elDept.value.trim();
+        const title = elTitle.value.trim();
+        const name = elName.value.trim();
+        if (!dept) return { ok:false, msg:"請先選擇科室" };
+        if (!title) return { ok:false, msg:"請先填寫職稱" };
+        if (!name) return { ok:false, msg:"請先填寫姓名" };
+        return { ok:true, dept, title, name };
+      }
+
+      function validateScores() {
+        const a = elScoreA.value === "" ? null : Number(elScoreA.value);
+        const b = elScoreB.value === "" ? null : Number(elScoreB.value);
+        if (a !== null && (Number.isNaN(a) || a < 0 || a > 50)) return { ok:false, msg:"A 必須是 0~50" };
+        if (b !== null && (Number.isNaN(b) || b < 0 || b > 50)) return { ok:false, msg:"B 必須是 0~50" };
+        return { ok:true, a, b };
+      }
+
+      function isCategoryComplete(catData) {
+        if (!catData) return false;
+        const a = catData.scoreA;
+        const b = catData.scoreB;
+        if (a === null || a === "" || typeof a === "undefined") return false;
+        if (b === null || b === "" || typeof b === "undefined") return false;
+        if (typeof a !== "number" || typeof b !== "number") return false;
+        if (a < 0 || a > 50 || b < 0 || b > 50) return false;
+        return true;
+      }
+
+      async function loadQuestions() {
+        const res = await fetch("./questions.json");
+        if (!res.ok) throw new Error("讀取 questions.json 失敗");
+        QUESTIONS = await res.json();
+      }
+
+      function renderCategoryOptionsPlain() {
+        elCat.innerHTML = CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("");
+        elCat.value = currentCategory;
+      }
+
+      function renderCategoryOptionsWithMarks(cats) {
+        elCat.innerHTML = CATEGORIES.map(cat => {
+          const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
+          const isDone = isCategoryComplete(cd);
+          const mark = isDone ? " 🟢" : " ⚪";
+          return `<option value="${cat}">${cat}${mark}</option>`;
+        }).join("");
+        elCat.value = currentCategory;
+      }
+
+      function renderQuestionList() {
+        const qs = QUESTIONS[currentCategory] || [];
+        elList.innerHTML = "";
+        qs.forEach(q => {
+          const div = document.createElement("div");
+          div.className = "qitem" + (q.id === currentQuestion?.id ? " active" : "");
+          div.style.cursor = IS_LOCKED ? "default" : "pointer";
+          div.innerHTML = `<div><strong>${q.id}</strong></div><div style="margin-top:4px; white-space:pre-wrap;">${q.q}</div>`;
+          div.onclick = () => {
+            currentQuestion = q;
+            renderQuestionList();
+            renderQuestionContent();
+            setStatus(IS_LOCKED ? "已鎖定（僅可瀏覽）" : "已切換題目（尚未儲存）", true);
+          };
+          elList.appendChild(div);
+        });
+      }
+
+      function renderQuestionContent() {
+        elA.textContent = currentQuestion?.aShort || "";
+        elALong.textContent = currentQuestion?.aLong || "";
+      }
+
+      function renderScoreTitle() {
+        elScoreTitle.textContent = `「${currentCategory}」類測試結果評分`;
+      }
+
+      function clearInputs() {
+        elScoreA.value = "";
+        elScoreB.value = "";
+        elComment.value = "";
+        updateCommentCount();
+      }
+
+      async function loadCategoryInputs() {
+        if (!EVAL_ID) return;
+        await initAuth();
+
+        elScoreA.value = "";
+        elScoreB.value = "";
+        elComment.value = "";
+        updateCommentCount();
+
+        try {
+          const snap = await getDoc(doc(db, "scores", EVAL_ID));
+          if (!snap.exists()) return;
+
+          const data = snap.data();
+          const catData = data?.categories?.[currentCategory] || data?.categories?.[CATEGORY_KEYS[currentCategory]];
+          if (!catData) return;
+
+          elScoreA.value = (catData.scoreA ?? "") === null ? "" : (catData.scoreA ?? "");
+          elScoreB.value = (catData.scoreB ?? "") === null ? "" : (catData.scoreB ?? "");
+          elComment.value = catData.comment ?? "";
+          updateCommentCount();
+        } catch (err) {
+          console.error(err);
+          setStatus("讀取既有分數失敗（請看 Console）", false);
+        }
+      }
+
+      async function refreshSummary() {
+        if (!EVAL_ID) {
+          elProgressText.textContent = "尚未建立評分紀錄";
+          elTotalScore.textContent = "-";
+          elDoneCount.textContent = "0/5";
+          elBtnSubmit.disabled = true;
+          renderCategoryOptionsPlain();
+          return;
+        }
+
+        await initAuth();
+
+        try {
+          const snap = await getDoc(doc(db, "scores", EVAL_ID));
+          if (!snap.exists()) return;
+
+          const data = snap.data();
+          const cats = data.categories || {};
+          isSubmitted = (data.submitted === true);
+          IS_LOCKED = isSubmitted;
+
+          let done = 0;
+          let total = 0;
+
+          for (const cat of CATEGORIES) {
+            const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
+            if (isCategoryComplete(cd)) {
+              done += 1;
+              total += (cd.scoreA + cd.scoreB);
+            }
+          }
+
+          elDoneCount.textContent = `${done}/5`;
+          elTotalScore.textContent = done === 0 ? "-" : String(total);
+
+          if (isSubmitted) {
+            elProgressText.textContent = "✅ 已送出（已鎖定）";
+          } else {
+            elProgressText.textContent = done === 5
+              ? "✅ 五類皆完成，可以送出"
+              : `尚未完成：還差 ${5 - done} 類`;
+          }
+
+          elBtnSubmit.disabled = (done !== 5) || isSubmitted;
+
+          // ✅ 這裡用 value 維持正確分類，文字才加 emoji
+          renderCategoryOptionsWithMarks(cats);
+
+        } catch (err) {
+          console.error(err);
+          setStatus("讀取總覽失敗（請看 Console）", false);
+        }
+      }
+
+      // ===== 事件 =====
+      elCat.addEventListener("change", async () => {
+        currentCategory = elCat.value;
+
+        const qs = QUESTIONS[currentCategory] || [];
+        currentQuestion = qs[0] || null;
+
         renderQuestionList();
         renderQuestionContent();
-      
-        // 送出後不要再提示「尚未儲存」
-        if (IS_LOCKED) {
-          setStatus("已鎖定（僅可瀏覽）", true);
-        } else {
-          setStatus("已切換題目（尚未儲存）", true);
-        }
-      };
-      elList.appendChild(div);
-    });
-  }
+        renderScoreTitle();
 
-  function renderQuestionContent() {
-    elA.textContent = currentQuestion?.aShort || "";
-    elALong.textContent = currentQuestion?.aLong || "";
-  }
-  function renderScoreTitle() {
-    if (!elScoreTitle) return;
-    elScoreTitle.textContent = `「${currentCategory}」類測試結果評分`;
-  }
+        await loadCategoryInputs();
+        await refreshSummary();
 
-  function clearInputs() {
-    elScoreA.value = "";
-    elScoreB.value = "";
-    elComment.value = "";
-    updateCommentCount();
-  }
-
-  function validateScores() {
-    const a = elScoreA.value === "" ? null : Number(elScoreA.value);
-    const b = elScoreB.value === "" ? null : Number(elScoreB.value);
-
-    if (a !== null && (Number.isNaN(a) || a < 0 || a > 50)) return { ok:false, msg:"A 必須是 0~50" };
-    if (b !== null && (Number.isNaN(b) || b < 0 || b > 50)) return { ok:false, msg:"B 必須是 0~50" };
-    return { ok:true, a, b };
-  }
-  
-  function isCategoryComplete(catData) {
-    // A、B 都必填，0~50
-    if (!catData) return false;
-    const a = catData.scoreA;
-    const b = catData.scoreB;
-    if (a === null || a === "" || typeof a === "undefined") return false;
-    if (b === null || b === "" || typeof b === "undefined") return false;
-    if (typeof a !== "number" || typeof b !== "number") return false;
-    if (a < 0 || a > 50 || b < 0 || b > 50) return false;
-    return true;
-  }
-  
-  async function refreshSummary() {
-    if (!EVAL_ID) {
-      elProgressText.textContent = "尚未建立評分紀錄";
-      elTotalScore.textContent = "-";
-      elDoneCount.textContent = "0/5";
-      elBtnSubmit.disabled = true;
-      return;
-    }
-  
-    try {
-      const snap = await getDoc(doc(db, "scores", EVAL_ID));
-      if (!snap.exists()) return;
-  
-      const data = snap.data();
-      const cats = data.categories || {};
-      isSubmitted = (data.submitted === true);
-  
-      let done = 0;
-      let total = 0;
-  
-      for (const cat of CATEGORIES) {
-        const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
-        if (isCategoryComplete(cd)) {
-          done += 1;
-          total += (cd.scoreA + cd.scoreB);
-        }
-      }
-  
-      elDoneCount.textContent = `${done}/5`;
-      elTotalScore.textContent = done === 0 ? "-" : String(total);
-      elProgressText.textContent = done === 5
-        ? "✅ 五類皆完成，可以送出"
-        : `尚未完成：還差 ${5 - done} 類`;
-  
-      elBtnSubmit.disabled = (done !== 5) || (data.submitted === true);
-      if (data.submitted === true) {
-        elProgressText.textContent = "✅ 已送出（已鎖定）";
-        IS_LOCKED = (data.submitted === true);
-      }
-      // 更新分類下拉顯示完成狀態
-      elCat.innerHTML = CATEGORIES.map(cat => {
-        const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
-        const isDone = isCategoryComplete(cd);
-        const mark = isDone ? " 🟢" : " ⚪";
-        return `<option value="${cat}">${cat}${mark}</option>`;
-      }).join("");
-      
-      elCat.value = currentCategory; // 保持原本選中的分類
-    } catch (err) {
-      console.error(err);
-      setStatus("讀取總覽失敗（請看 Console）", false);
-    }
-  }
-
-  
-  // --- 事件 ---
-  elCat.addEventListener("change", async () => {
-    currentCategory = elCat.value;
-    currentQuestion = QUESTIONS[currentCategory][0];
-    renderQuestionList();
-    renderQuestionContent();
-    renderScoreTitle();
-  
-    await loadCategoryInputs(); // 改成載入本分類已存的分數/評語
-    await refreshSummary();
-    setStatus(IS_LOCKED ? "已鎖定（僅可瀏覽）" : "已切換分類（已載入本分類分數/評語）", true);
-  });
-
-  elComment.addEventListener("input", () => {
-    // 有些情況貼上可能超過 maxlength 或帶奇怪字元
-    if (elComment.value.length > 200) {
-      elComment.value = elComment.value.slice(0, 200);
-    }
-    updateCommentCount();
-  });
-  
-  document.getElementById("btnClear").addEventListener("click", () => {
-    clearInputs();
-    setStatus("已清空本次輸入", true);
-  });
-  elBtnStart.addEventListener("click", async () => {
-    const v = validateRaterInfo();
-    if (!v.ok) {
-      setStartStatus(v.msg, false);
-      return;
-    }
-    setStartStatus("基本資料 OK", true);
-  
-    try {
-      await initAuth();
-      const docRef = await addDoc(collection(db, "scores"), {
-        rater: {
-          dept: v.dept,
-          title: v.title,
-          name: v.name
-        },
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        setStatus(IS_LOCKED ? "已鎖定（僅可瀏覽）" : "已切換分類（已載入本分類分數/評語）", true);
       });
-  
-      EVAL_ID = docRef.id; 
-      hasUnsavedOrUnsubmittedWork = true;
-      isSubmitted = false;
-  
-      setScoringEnabled(true);
-      await loadCategoryInputs();
-      await refreshSummary();
-      setStatus("已建立新的評分紀錄，可以開始評分", true);
-      setStartStatus("可以開始評分", true);
-  
-    } catch (err) {
-      console.error(err);
-      setStatus("建立評分紀錄失敗", false);
-    }
-  });
 
+      elComment.addEventListener("input", () => {
+        if (elComment.value.length > 200) elComment.value = elComment.value.slice(0, 200);
+        updateCommentCount();
+      });
 
+      document.getElementById("btnClear").addEventListener("click", () => {
+        if (IS_LOCKED || isSubmitted) {
+          setStatus("已送出鎖定，無法再修改", false);
+          return;
+        }
+        clearInputs();
+        setStatus("已清空本次輸入", true);
+      });
 
-document.getElementById("btnSave").addEventListener("click", async () => {
-  if (!EVAL_ID) {
-    setStatus("請先按「開始評分」建立評分紀錄", false);
-    return;
-  }
+      elBtnStart.addEventListener("click", async () => {
+        if (IS_LOCKED || isSubmitted) {
+          setStatus("此份評分已送出鎖定。請重整後重新開始評分。", false);
+          return;
+        }
 
-  const r = validateRaterInfo();
-  if (!r.ok) {
-    setStatus("請先完成科室/職稱/姓名，按「開始評分」", false);
-    return;
-  }
+        const v = validateRaterInfo();
+        if (!v.ok) { setStartStatus(v.msg, false); return; }
+        setStartStatus("基本資料 OK", true);
 
-  if (!currentQuestion) {
-    setStatus("沒有選到題目", false);
-    return;
-  }
+        try {
+          await initAuth();
+          const uid = auth.currentUser?.uid;
+          if (!uid) throw new Error("Auth 尚未就緒，沒有 uid");
 
-  const v = validateScores();
-  if (!v.ok) {
-    setStatus(v.msg, false);
-    return;
-  }
+          const docRef = await addDoc(collection(db, "scores"), {
+            ownerUid: uid,         // ✅ rules 需要
+            submitted: false,
+            totalScore: 0,
+            categories: {},
+            rater: { dept: v.dept, title: v.title, name: v.name },
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
 
-  const comment = (elComment.value || "").trim();
-  if (comment.length > 200) {
-    setStatus("評語最多 200 字", false);
-    return;
-  }
+          EVAL_ID = docRef.id;
+          hasUnsavedOrUnsubmittedWork = true;
+          isSubmitted = false;
+          IS_LOCKED = false;
 
-  try {
-    await initAuth();
-    await updateDoc(doc(db, "scores", EVAL_ID), {
-      updatedAt: serverTimestamp(),
-      [`categories.${currentCategory}`]: {
-        scoreA: v.a,
-        scoreB: v.b,
-        comment,
-        updatedAt: serverTimestamp()
-      }
-    });
+          setScoringEnabled(true);
 
-    await refreshSummary();
-    setStatus("已儲存本類評分", true);
-    hasUnsavedOrUnsubmittedWork = true;
-  } catch (err) {
-    console.error(err);
-    setStatus("寫入失敗，請看 Console", false);
-  }
-});
+          // 初始化顯示第一分類第一題
+          currentCategory = CATEGORIES[0];
+          currentQuestion = (QUESTIONS[currentCategory] && QUESTIONS[currentCategory][0]) ? QUESTIONS[currentCategory][0] : null;
 
-  // --- 初始化 ---
-  setScoringEnabled(false);  // ✅ 一進來先鎖
-  try { await initAuth(); } catch(e) { console.error(e); }
-  
-  try {
-    await loadQuestions(); // ✅ 先把 200 題載進來
-    console.log("題庫分類 keys =", Object.keys(QUESTIONS));
-  
-    // 讓分類下拉用既有的 CATEGORIES 順序，而不是 Object.keys 的隨機順序
-    currentCategory = CATEGORIES[0];
-    currentQuestion = (QUESTIONS[currentCategory] && QUESTIONS[currentCategory][0]) ? QUESTIONS[currentCategory][0] : null;
-  
-    renderCategoryOptions();
-    renderQuestionList();
-    renderQuestionContent();
-  
-    // 初始化時先不要 loadCategoryInputs（因為還沒按開始評分）
-    setStatus("題庫已載入。請先填科室/職稱/姓名，按「開始評分」後再評分", true);
-  } catch (err) {
-    console.error(err);
-    setStatus("題庫載入失敗：請確認 questions.json 路徑與是否有上傳到 GitHub", false);
-  }
+          renderCategoryOptionsPlain();
+          renderQuestionList();
+          renderQuestionContent();
+          renderScoreTitle();
 
-  window.addEventListener("beforeunload", (e) => {
-    if (!EVAL_ID) return;                 // 還沒開始評分不用擋
-    if (isSubmitted) return;              // 已送出不用擋
-    if (!hasUnsavedOrUnsubmittedWork) return;
-  
-    e.preventDefault();
-    e.returnValue = ""; // 這行是觸發瀏覽器內建提示的關鍵
-  });
+          await refreshSummary();
+          setStatus("已建立新的評分紀錄，可以開始評分", true);
+          setStartStatus("可以開始評分", true);
 
-  // --- 確認送出 ---
-  elBtnSubmit.addEventListener("click", async () => {
-  if (!EVAL_ID) {
-    setStatus("請先按「開始評分」建立評分紀錄", false);
-    return;
-  }
+        } catch (err) {
+          console.error(err);
+          setStatus("建立評分紀錄失敗（請看 Console）", false);
+        }
+      });
 
-  // 送出後不允許重送
-  if (isSubmitted || IS_LOCKED) {
-    setStatus("已送出（已鎖定）", true);
-    return;
-  }
+      document.getElementById("btnSave").addEventListener("click", async () => {
+        if (!EVAL_ID) { setStatus("請先按「開始評分」建立評分紀錄", false); return; }
+        if (IS_LOCKED || isSubmitted) { setStatus("已送出鎖定，無法再修改", false); return; }
 
-  // 再保險確認一次是否五類都完成
-  await refreshSummary();
-  if (elBtnSubmit.disabled) {
-    setStatus("需五類皆填 A/B 才能送出", false);
-    return;
-  }
+        const r = validateRaterInfo();
+        if (!r.ok) { setStatus("請先完成科室/職稱/姓名，按「開始評分」", false); return; }
+        if (!currentQuestion) { setStatus("沒有選到題目", false); return; }
 
-  if (!confirm("確認送出後將鎖定，無法再修改。確定送出？")) return;
+        const v = validateScores();
+        if (!v.ok) { setStatus(v.msg, false); return; }
 
-  try {
-    await initAuth(); // ✅ 匿名登入保險
+        const comment = (elComment.value || "").trim();
+        if (comment.length > 200) { setStatus("評語最多 200 字", false); return; }
 
-    // 重新讀一次確保拿到最新 categories，順便算 totalScore
-    const snap = await getDoc(doc(db, "scores", EVAL_ID));
-    if (!snap.exists()) {
-      setStatus("找不到評分紀錄，無法送出", false);
-      return;
-    }
+        try {
+          await initAuth();
 
-    const data = snap.data();
-    const cats = data.categories || {};
+          await updateDoc(doc(db, "scores", EVAL_ID), {
+            updatedAt: serverTimestamp(),
+            [`categories.${currentCategory}`]: {
+              scoreA: v.a,
+              scoreB: v.b,
+              comment,
+              updatedAt: serverTimestamp()
+            }
+          });
 
-    let total = 0;
-    for (const cat of CATEGORIES) {
-      const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
-      if (!isCategoryComplete(cd)) {
-        setStatus(`「${cat}」尚未完成，請先填 A/B`, false);
-        return;
-      }
-      total += (cd.scoreA + cd.scoreB);
-    }
+          hasUnsavedOrUnsubmittedWork = true;
+          await refreshSummary();
+          setStatus("已儲存本類評分", true);
 
-    await updateDoc(doc(db, "scores", EVAL_ID), {
-      submitted: true,
-      submittedAt: serverTimestamp(),
-      totalScore: total,
-      updatedAt: serverTimestamp()
-    });
+        } catch (err) {
+          console.error(err);
+          setStatus("寫入失敗（請看 Console）", false);
+        }
+      });
 
-    // UI 鎖定
-    IS_LOCKED = true;
-    isSubmitted = true;
-    setScoringEnabled(false);
-    elBtnSubmit.disabled = true;
+      // ===== 送出 =====
+      elBtnSubmit.addEventListener("click", async () => {
+        if (!EVAL_ID) { setStatus("請先按「開始評分」建立評分紀錄", false); return; }
+        if (isSubmitted || IS_LOCKED) { setStatus("已送出（已鎖定）", true); return; }
 
-    await refreshSummary();
-    setStatus("✅ 已送出並鎖定完成，感謝評分，如需重新評分請重整網頁再開始！", true);
-  } catch (err) {
-    console.error(err);
-    setStatus("送出失敗，請看 Console", false);
-  }
-});
-  
+        await refreshSummary();
+        if (elBtnSubmit.disabled) { setStatus("需五類皆填 A/B 才能送出", false); return; }
 
-  
+        if (!confirm("確認送出後將鎖定，無法再修改。確定送出？")) return;
 
-</script>
-</div> <!-- container -->
+        try {
+          await initAuth();
+
+          const snap = await getDoc(doc(db, "scores", EVAL_ID));
+          if (!snap.exists()) { setStatus("找不到評分紀錄，無法送出", false); return; }
+
+          const data = snap.data();
+          const cats = data.categories || {};
+
+          let total = 0;
+          for (const cat of CATEGORIES) {
+            const cd = cats[cat] || cats[CATEGORY_KEYS[cat]];
+            if (!isCategoryComplete(cd)) {
+              setStatus(`「${cat}」尚未完成，請先填 A/B`, false);
+              return;
+            }
+            total += (cd.scoreA + cd.scoreB);
+          }
+
+          await updateDoc(doc(db, "scores", EVAL_ID), {
+            submitted: true,
+            submittedAt: serverTimestamp(),
+            totalScore: total,
+            updatedAt: serverTimestamp()
+          });
+
+          IS_LOCKED = true;
+          isSubmitted = true;
+          setScoringEnabled(false);
+          elBtnSubmit.disabled = true;
+
+          await refreshSummary();
+          setStatus("✅ 已送出並鎖定完成，感謝評分，如需重新評分請重整網頁再開始！", true);
+
+        } catch (err) {
+          console.error(err);
+          setStatus("送出失敗（請看 Console）", false);
+        }
+      });
+
+      // ===== 初始化 =====
+      (async function boot() {
+        setScoringEnabled(false); // 一開始鎖
+        try { await initAuth(); } catch(e) { console.error(e); } // 先把匿名登入準備好
+
+        try {
+          await loadQuestions();
+          currentCategory = CATEGORIES[0];
+          currentQuestion = (QUESTIONS[currentCategory] && QUESTIONS[currentCategory][0]) ? QUESTIONS[currentCategory][0] : null;
+
+          renderCategoryOptionsPlain();
+          renderQuestionList();
+          renderQuestionContent();
+          renderScoreTitle();
+
+          setStatus("題庫已載入。請先填科室/職稱/姓名，按「開始評分」後再評分", true);
+        } catch (err) {
+          console.error(err);
+          setStatus("題庫載入失敗：請確認 questions.json 路徑與是否有上傳到 GitHub", false);
+        }
+      })();
+
+      // 離開提醒
+      window.addEventListener("beforeunload", (e) => {
+        if (!EVAL_ID) return;
+        if (isSubmitted) return;
+        if (!hasUnsavedOrUnsubmittedWork) return;
+        e.preventDefault();
+        e.returnValue = "";
+      });
+    </script>
+
+  </div>
 </body>
 </html>
