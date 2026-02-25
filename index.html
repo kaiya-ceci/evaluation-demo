@@ -873,14 +873,18 @@
         if (!EVAL_ID) { setStatus("請先按「開始評分」建立評分紀錄", false); return; }
         if (IS_LOCKED || isSubmitted) { setStatus("已送出鎖定，無法再修改", false); return; }
 
-        const r = validateRaterInfo();
-        if (!r.ok) { setStatus("請先完成科室/職稱/姓名，按「開始評分」", false); return; }
-        if (!currentQuestion) { setStatus("沒有選到題目", false); return; }
-
         const v = validateScores();
         if (!v.ok) { setStatus(v.msg, false); return; }
-
+        
         const comment = (elComment.value || "").trim();
+        
+        // ✅ 新規則：若 A ≠ 50，評語必填（B 不檢查）
+        if (v.a !== null && v.a !== 50 && comment.length === 0) {
+          setStatus("內容正確性 A 不是 50 分時，評語為必填（請說明錯在哪裡）", false);
+          elComment.focus();
+          return;
+        }
+        
         if (comment.length > 200) { setStatus("評語最多 200 字", false); return; }
 
         try {
