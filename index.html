@@ -56,6 +56,8 @@
     .label {
       font-weight: 600;
       color: #374151;
+      margin-top: 14px; 
+      margin-bottom: 6px;
     }
     
     /* 開始評分列 */
@@ -123,7 +125,7 @@
     .container * {
       box-sizing: border-box;
     }
-    /* ✅ 統一：右側各段落都用同一種卡片感（含下方總覽/狀態） */
+    /* 統一：右側各段落都用同一種卡片感（含下方總覽/狀態） */
     .sectionCard{
       background:#fff;
       border:1px solid #e5e7eb;
@@ -136,6 +138,11 @@
     /* 本類評分想要淡灰底（保留你的視覺層次） */
     .sectionCard.light{
       background:#f8fafc;
+    }
+    /* 題目/簡答/詳答 卡片：讓字不要貼邊 */
+    #qText, #aText, #aLongText{
+      padding: 14px 16px !important;   /* 內距加大 */
+      line-height: 1.6;
     }
   </style>
 </head>
@@ -214,7 +221,7 @@
         </div>
       </div>
     
-     <div class="label">本類評語（可空白，最多 200 字）</div>
+     <div class="label">評語（可空白，最多 200 字）</div>
      <textarea id="comment" placeholder="可留空" maxlength="200"></textarea>
      <div class="hint" style="text-align:right;">
        <span id="commentCount">0</span>/200
