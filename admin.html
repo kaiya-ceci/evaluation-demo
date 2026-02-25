@@ -7,7 +7,7 @@
 <style>
   body { font-family: system-ui; margin:20px; }
   table { border-collapse: collapse; width:100%; margin-top:15px; }
-  th, td { border:1px solid #ddd; padding:8px; font-size:14px; }
+  th, td { border:1px solid #ddd; padding:8px; font-size:14px; vertical-align: top; }
   th { background:#f3f4f6; }
   button { padding:8px 14px; font-size:14px; }
   th.sortable { cursor: pointer; user-select: none; }
@@ -17,7 +17,8 @@
 <body>
 
 <h2>評分管理端</h2>
-  <div id="loginBox" style="margin:12px 0; padding:12px; border:1px solid #ddd; border-radius:8px; max-width:420px;">
+
+<div id="loginBox" style="margin:12px 0; padding:12px; border:1px solid #ddd; border-radius:8px; max-width:420px;">
   <div style="display:flex; gap:8px; margin-bottom:8px;">
     <input id="email" placeholder="Admin Email" style="flex:1; padding:8px;">
     <input id="password" placeholder="Password" type="password" style="flex:1; padding:8px;">
@@ -27,7 +28,7 @@
   <span id="loginMsg" style="margin-left:8px; color:#666;"></span>
 </div>
 
-<button id="btnExport">下載 CSV</button>
+<button id="btnExport" disabled>下載 CSV</button>
 
 <table id="dataTable">
   <thead>
@@ -46,7 +47,7 @@
       <th>接管流程與期限評語</th>
       <th>費用與補助評語</th>
       <th data-key="total" class="sortable">總分 ↕</th>
-      <th>送出時間</th>
+      <th data-key="time" class="sortable">送出時間 ↕</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -64,6 +65,7 @@ import {
   getFirestore, collection, getDocs 
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
+/** ========= Firebase init ========= */
 const firebaseConfig = {
   apiKey: "AIzaSyBqSDWpIR_Bm2CVdnObkkuopOBrxgoXlH0",
   authDomain: "tcswg-ai-qa.firebaseapp.com",
@@ -74,22 +76,33 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+/** ========= DOM ========= */
 const tableBody = document.querySelector("#dataTable tbody");
 const btnExport = document.getElementById("btnExport");
+
+const btnLogin = document.getElementById("btnLogin");
+const btnLogout = document.getElementById("btnLogout");
+const loginMsg = document.getElementById("loginMsg");
+
+/** ========= Data ========= */
+const CATEGORIES = [
+  "化糞池處理",
+  "政策與法規",
+  "施工與技術",
+  "接管流程與期限",
+  "費用與補助"
+];
 
 let exportRows = [];
 let sortKey = null;
 let sortAsc = true;
 
-const loginBox = document.getElementById("loginBox");
-const btnLogin = document.getElementById("btnLogin");
-const btnLogout = document.getElementById("btnLogout");
-const loginMsg = document.getElementById("loginMsg");
-
+/** ========= Auth UI ========= */
 btnLogin.addEventListener("click", async () => {
   loginMsg.textContent = "登入中…";
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
+
   try {
     await signInWithEmailAndPassword(auth, email, password);
   } catch (e) {
@@ -107,29 +120,22 @@ onAuthStateChanged(auth, (user) => {
     loginMsg.textContent = `已登入：${user.email}`;
     btnLogin.style.display = "none";
     btnLogout.style.display = "";
-    // ✅ 登入後才讀資料
+    btnExport.disabled = false;
     loadData();
   } else {
     loginMsg.textContent = "尚未登入";
     btnLogin.style.display = "";
     btnLogout.style.display = "none";
-    tableBody.innerHTML = "";
+    btnExport.disabled = true;
     exportRows = [];
+    tableBody.innerHTML = "";
   }
 });
 
-const CATEGORIES = [
-  "化糞池處理",
-  "政策與法規",
-  "施工與技術",
-  "接管流程與期限",
-  "費用與補助"
-];
-
+/** ========= Load / Render ========= */
 async function loadData() {
   try {
     const snap = await getDocs(collection(db, "scores"));
-
     exportRows = [];
 
     snap.forEach(docSnap => {
@@ -156,10 +162,6 @@ async function loadData() {
       exportRows.push(row);
     });
 
-    // ✅ 你想要預設排序的話，取消註解其中一段
-    // sortBy("total");        // 預設總分排序（第一次會升序）
-    // sortKey = "total"; sortAsc = false; updateSortIcons(); sortBy("total"); // 直接預設總分高到低
-
     renderTable();
     updateSortIcons();
 
@@ -172,107 +174,11 @@ async function loadData() {
   }
 }
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${row.name}</td>
-        <td>${row.dept}</td>
-        <td>${row.title}</td>
-        <td>${row["化糞池處理"]}</td>
-        <td>${row["政策與法規"]}</td>
-        <td>${row["施工與技術"]}</td>
-        <td>${row["接管流程與期限"]}</td>
-        <td>${row["費用與補助"]}</td>
-
-        <td class="c1"></td>
-        <td class="c2"></td>
-        <td class="c3"></td>
-        <td class="c4"></td>
-        <td class="c5"></td>
-
-        <td>${row.total}</td>
-        <td>${row.time}</td>
-      `;
-      tr.querySelector(".c1").textContent = row["化糞池處理_comment"] || "";
-      tr.querySelector(".c2").textContent = row["政策與法規_comment"] || "";
-      tr.querySelector(".c3").textContent = row["施工與技術_comment"] || "";
-      tr.querySelector(".c4").textContent = row["接管流程與期限_comment"] || "";
-      tr.querySelector(".c5").textContent = row["費用與補助_comment"] || "";
-      
-      // 讓換行顯示出來
-      tr.querySelectorAll(".c1,.c2,.c3,.c4,.c5").forEach(td => {
-        td.style.whiteSpace = "pre-wrap";
-      });
-      tableBody.appendChild(tr);    
-    renderTable();
-
-    // 沒資料時給提示
-  async function loadData() {
-    try {
-      if (exportRows.length === 0) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="15" style="text-align:center;color:#666;">目前沒有「已送出」資料</td>`;
-        tableBody.appendChild(tr);
-      }
-  
-    } catch (err) {
-      console.error(err);
-      alert("讀取 Firestore 失敗，請看 Console");
-    }
-  }
-  
-btnExport.addEventListener("click", () => {
-  if (exportRows.length === 0) {
-    alert("沒有可匯出的資料");
-    return;
-  }
-
-  const headers = [
-    "姓名","科室","職稱",
-    "化糞池處理","政策與法規","施工與技術","接管流程與期限","費用與補助",
-    "化糞池處理評語","政策與法規評語","施工與技術評語","接管流程與期限評語","費用與補助評語",
-    "總分","送出時間"
-  ];
-
-  const rows = exportRows.map(r => [
-    r.name, r.dept, r.title,
-    r["化糞池處理"], r["政策與法規"], r["施工與技術"], r["接管流程與期限"], r["費用與補助"],
-    r["化糞池處理_comment"], r["政策與法規_comment"], r["施工與技術_comment"], r["接管流程與期限_comment"], r["費用與補助_comment"],
-    r.total, r.time
-  ]);
-
-  const escapeCsv = (v) => {
-    const s = String(v ?? "");
-    return `"${s.replace(/"/g, '""')}"`;
-  };
-
-  const csvBody =
-    [headers, ...rows]
-      .map(line => line.map(escapeCsv).join(","))
-      .join("\n");
-
-  // Excel 亂碼：UTF-8 BOM
-  const csvWithBom = "\uFEFF" + csvBody;
-
-  const blob = new Blob([csvWithBom], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "評分匯出.csv";
-  a.click();
-
-  URL.revokeObjectURL(url);
-});
-let sortKey = null;
-let sortAsc = true;
-
 function renderTable() {
   tableBody.innerHTML = "";
 
   exportRows.forEach(row => {
     const tr = document.createElement("tr");
-
-    // ✅ 不要用 innerHTML 直接塞評語（安全），下面第3點會一起處理
     tr.innerHTML = `
       <td class="name"></td>
       <td class="dept"></td>
@@ -309,7 +215,10 @@ function renderTable() {
     tr.querySelector(".c3").textContent = row["施工與技術_comment"] || "";
     tr.querySelector(".c4").textContent = row["接管流程與期限_comment"] || "";
     tr.querySelector(".c5").textContent = row["費用與補助_comment"] || "";
-    tr.querySelectorAll(".c1,.c2,.c3,.c4,.c5").forEach(td => td.style.whiteSpace = "pre-wrap");
+
+    tr.querySelectorAll(".c1,.c2,.c3,.c4,.c5").forEach(td => {
+      td.style.whiteSpace = "pre-wrap";
+    });
 
     tr.querySelector(".total").textContent = row.total ?? "";
     tr.querySelector(".time").textContent = row.time || "";
@@ -318,29 +227,27 @@ function renderTable() {
   });
 }
 
+/** ========= Sorting ========= */
 function sortBy(key) {
-  if (sortKey === key) {
-    sortAsc = !sortAsc;
-  } else {
-    sortKey = key;
-    sortAsc = true;
-  }
+  if (sortKey === key) sortAsc = !sortAsc;
+  else { sortKey = key; sortAsc = true; }
 
   exportRows.sort((a, b) => {
     const av = a[key] ?? "";
     const bv = b[key] ?? "";
 
-    const an = Number(av);
-    const bn = Number(bv);
-
-    // 以數字排序（空值排最後）
     const aEmpty = av === "" || av === null || typeof av === "undefined";
     const bEmpty = bv === "" || bv === null || typeof bv === "undefined";
     if (aEmpty && bEmpty) return 0;
     if (aEmpty) return 1;
     if (bEmpty) return -1;
 
-    const cmp = (Number.isNaN(an) || Number.isNaN(bn)) ? String(av).localeCompare(String(bv)) : (an - bn);
+    const an = Number(av);
+    const bn = Number(bv);
+    const cmp = (Number.isNaN(an) || Number.isNaN(bn))
+      ? String(av).localeCompare(String(bv))
+      : (an - bn);
+
     return sortAsc ? cmp : -cmp;
   });
 
@@ -354,20 +261,52 @@ function updateSortIcons() {
     const baseText = th.getAttribute("data-label") || th.textContent.replace(/[↑↓↕]\s*$/, "").trim();
     th.setAttribute("data-label", baseText);
 
-    if (key === sortKey) {
-      th.textContent = `${baseText} ${sortAsc ? "↑" : "↓"}`;
-    } else {
-      th.textContent = `${baseText} ↕`;
-    }
+    if (key === sortKey) th.textContent = `${baseText} ${sortAsc ? "↑" : "↓"}`;
+    else th.textContent = `${baseText} ↕`;
   });
 }
 
-// 綁定 sortable 表頭
 document.querySelectorAll("th.sortable").forEach(th => {
   th.addEventListener("click", () => {
     const key = th.getAttribute("data-key");
     sortBy(key);
   });
+});
+
+/** ========= CSV Export ========= */
+btnExport.addEventListener("click", () => {
+  if (exportRows.length === 0) {
+    alert("沒有可匯出的資料");
+    return;
+  }
+
+  const headers = [
+    "姓名","科室","職稱",
+    "化糞池處理","政策與法規","施工與技術","接管流程與期限","費用與補助",
+    "化糞池處理評語","政策與法規評語","施工與技術評語","接管流程與期限評語","費用與補助評語",
+    "總分","送出時間"
+  ];
+
+  const rows = exportRows.map(r => [
+    r.name, r.dept, r.title,
+    r["化糞池處理"], r["政策與法規"], r["施工與技術"], r["接管流程與期限"], r["費用與補助"],
+    r["化糞池處理_comment"], r["政策與法規_comment"], r["施工與技術_comment"], r["接管流程與期限_comment"], r["費用與補助_comment"],
+    r.total, r.time
+  ]);
+
+  const escapeCsv = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csvBody = [headers, ...rows].map(line => line.map(escapeCsv).join(",")).join("\n");
+  const csvWithBom = "\uFEFF" + csvBody;
+
+  const blob = new Blob([csvWithBom], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "評分匯出.csv";
+  a.click();
+
+  URL.revokeObjectURL(url);
 });
 </script>
 
