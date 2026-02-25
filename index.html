@@ -281,6 +281,33 @@
         align-items: stretch !important;
       }
     }
+      /* ✅ 評分說明框（藍框內的小說明） */
+      .scoreHelp{
+        margin-top: 10px;
+        padding: 10px 12px;
+        background: #ffffff;
+        border: 1px dashed #bfe7e4;
+        border-radius: 12px;
+      }
+      
+      .scoreHelpTitle{
+        font-weight: 800;
+        font-size: 13px;
+        color: #0f766e;
+        margin-bottom: 4px;
+      }
+      
+      .scoreHelpText{
+        font-size: 13px;
+        line-height: 1.6;
+        color: #374151;
+      }
+    /* ✅ 讓評分總覽的三格在桌機排成三欄（可選） */
+    @media (min-width: 900px){
+      .sectionCard .grid2{
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
 
     
   </style>
@@ -356,6 +383,15 @@
             <div class="scoreCardTitle">
               <span id="scoreTitle">本類評分</span>            
             </div>
+            <!-- ✅ 評分說明（新增） -->
+            <div class="scoreHelp">
+              <div class="scoreHelpTitle">評分方式</div>
+              <div class="scoreHelpText">
+                本測試採「分類評分」，不需逐題評分。每類依
+                <b>內容正確性 A</b> 與 <b>語意完整性 B</b> 各評 <b>0~50</b> 分，
+                每類滿分 <b>100</b> 分；五類合計總分滿分 <b>500</b> 分。
+              </div>
+            </div>
     
             <div class="grid2" style="margin-top:10px;">
               <div>
@@ -389,6 +425,12 @@
                 <div class="label">總分（5A+5B）</div>
                 <div id="totalScore" style="font-size:20px; font-weight:700;">-</div>
               </div>
+            
+              <div>
+                <div class="label">平均分（總分/5）</div>
+                <div id="avgScore" style="font-size:20px; font-weight:700;">-</div>
+              </div>
+            
               <div>
                 <div class="label">完成度</div>
                 <div id="doneCount" style="font-size:20px; font-weight:700;">0/5</div>
@@ -467,6 +509,7 @@
       const elProgressText = document.getElementById("progressText");
       const elTotalScore = document.getElementById("totalScore");
       const elDoneCount = document.getElementById("doneCount");
+      const elAvgScore = document.getElementById("avgScore");
       const elBtnSubmit = document.getElementById("btnSubmit");
       const elStartStatus = document.getElementById("startStatus");
       const elScoreTitle = document.getElementById("scoreTitle");
@@ -627,6 +670,7 @@
           elProgressText.textContent = "尚未建立評分紀錄";
           elTotalScore.textContent = "-";
           elDoneCount.textContent = "0/5";
+          elAvgScore.textContent = "-";
           elBtnSubmit.disabled = true;
           renderCategoryOptionsPlain();
           return;
@@ -656,7 +700,14 @@
 
           elDoneCount.textContent = `${done}/5`;
           elTotalScore.textContent = done === 0 ? "-" : String(total);
-
+          
+          // ✅ 平均分：總分/5（顯示到小數 1 位可選）
+          if (done === 0) {
+            elAvgScore.textContent = "-";
+          } else {
+            const avg = total / 5;
+            elAvgScore.textContent = String(Math.round(avg * 10) / 10); // 例如 80 或 80.4
+          }
           if (isSubmitted) {
             elProgressText.textContent = "✅ 已送出（已鎖定）";
           } else {
