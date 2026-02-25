@@ -206,7 +206,7 @@
 
     <div class="scoreCard">
       <div class="scoreCardTitle">
-        <span>本類評分</span>
+        <span id="scoreTitle">本類評分</span>
         <span class="hint">請針對本類型表現綜合評分</span>
       </div>
     
@@ -233,7 +233,7 @@
       </div>
     </div>
     <div class="sectionCard" style="margin-top:12px; border-color:#eee;">
-      <strong>本次評分總覽</strong>
+      <strong>評分總覽</strong>
       <div class="hint" id="progressText" style="margin-top:6px;">尚未開始</div>
     
       <div class="grid2" style="margin-top:10px;">
@@ -334,6 +334,7 @@
   const elDoneCount = document.getElementById("doneCount");
   const elBtnSubmit = document.getElementById("btnSubmit");
   const elStartStatus = document.getElementById("startStatus");
+  const elScoreTitle = document.getElementById("scoreTitle");
 
   function setScoringEnabled(enabled) {
     elCat.disabled = !enabled;
@@ -439,6 +440,10 @@
     elA.textContent = currentQuestion?.aShort || "";
     elALong.textContent = currentQuestion?.aLong || "";
   }
+  function renderScoreTitle() {
+    if (!elScoreTitle) return;
+    elScoreTitle.textContent = `「${currentCategory}」評分`;
+  }
 
   function clearInputs() {
     elScoreA.value = "";
@@ -530,6 +535,7 @@
     currentQuestion = QUESTIONS[currentCategory][0];
     renderQuestionList();
     renderQuestionContent();
+    renderScoreTitle();
   
     await loadCategoryInputs(); // ✅ 改成載入本分類已存的分數/評語
     await refreshSummary();
@@ -682,6 +688,7 @@
     renderCategoryOptions();
     renderQuestionList();
     renderQuestionContent();
+    renderQuestionContent(
   
     // ❌ 初始化時先不要 loadCategoryInputs（因為還沒按開始評分）
     setStatus("題庫已載入。請先填科室/職稱/姓名，按「開始評分」後再評分", true);
