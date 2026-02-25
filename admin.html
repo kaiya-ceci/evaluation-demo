@@ -384,9 +384,9 @@ function renderHeader() {
   headerRow.innerHTML = "";
 
   // 固定欄（也做排序可選；你要就打開 key）
-  headerRow.appendChild(th("姓名", { sticky:1 }));
-  headerRow.appendChild(th("科室", { sticky:2 }));
-  headerRow.appendChild(th("職稱", { sticky:3 }));
+  headerRow.appendChild(th("姓名 ↕", { sticky:1, key:"name" }));
+  headerRow.appendChild(th("科室 ↕", { sticky:2, key:"dept" }));
+  headerRow.appendChild(th("職稱 ↕", { sticky:3, key:"title" }));
 
   // 每一類：A、B、A+B、評語（同色、排一起）
   CAT_META.forEach(({name, cls}) => {
