@@ -33,9 +33,11 @@
   
 
 <table id="dataTable">
-<thead>
-  <tr id="headerRow"></tr>
-</thead>
+  <thead>
+    <tr id="headerRow"></tr>
+  </thead>
+  <tbody></tbody>
+</table>
 <script type="module">
 import { 
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
@@ -101,18 +103,21 @@ btnLogout.addEventListener("click", async () => {
 });
 
 onAuthStateChanged(auth, async (user) => {
+  // 未登入
   if (!user) {
     loginMsg.textContent = "尚未登入";
     btnLogin.style.display = "";
     btnLogout.style.display = "none";
     btnExport.disabled = true;
     btnToggleAB.disabled = true;
+
     exportRows = [];
     tableBody.innerHTML = "";
+    renderHeader(); // 讓表頭至少存在
     return;
   }
 
-  // ✅ 如果是匿名帳號：直接登出，不給看
+  // 匿名或沒有 email → 不給看（防止前端匿名登入影響 admin）
   if (user.isAnonymous || !user.email) {
     await signOut(auth);
     loginMsg.textContent = "請使用管理員 Email/Password 登入（不接受匿名登入）";
@@ -120,22 +125,25 @@ onAuthStateChanged(auth, async (user) => {
     btnLogout.style.display = "none";
     btnExport.disabled = true;
     btnToggleAB.disabled = true;
+
     exportRows = [];
     tableBody.innerHTML = "";
+    renderHeader();
     return;
   }
 
-  // ✅ 正常管理員登入
+  // 管理員登入成功
   loginMsg.textContent = `已登入：${user.email}`;
   btnLogin.style.display = "none";
   btnLogout.style.display = "";
   btnExport.disabled = false;
   btnToggleAB.disabled = false;
 
-  loadData();
+  // ✅ 先畫表頭（依 showAB 狀態）
   renderHeader();
-  renderTable();
-  updateSortIcons();
+
+  // ✅ 再讀資料，loadData 內會 renderTable + updateSortIcons
+  await loadData();
 });
 
 /** ========= Load ========= */
@@ -168,18 +176,24 @@ async function loadData() {
         row[cat + "_A"] = a;
         row[cat + "_B"] = b;
         row[cat] = (a == null || b == null) ? "" : (a + b);
-
         row[cat + "_comment"] = cd?.comment ?? "";
       });
 
       exportRows.push(row);
     });
 
+    // ✅ 這三個只做一次就好
+    renderHeader();
     renderTable();
     updateSortIcons();
 
+    // ✅ 沒資料提示（colspan 要跟 showAB 同步）
+    const colCount =
+      3 + (showAB ? CATEGORIES.length * 2 : 0) + CATEGORIES.length + CATEGORIES.length + 2;
+
     if (exportRows.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="15" style="text-align:center;color:#666;">目前沒有「已送出」資料</td></tr>`;
+      tableBody.innerHTML =
+        `<tr><td colspan="${colCount}" style="text-align:center;color:#666;">目前沒有「已送出」資料</td></tr>`;
     }
   } catch (err) {
     console.error(err);
