@@ -275,6 +275,9 @@
   import { initializeApp } 
   from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 
+  import { getAuth, signInAnonymously } 
+   from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
   import { 
     getFirestore, doc, getDoc, updateDoc, serverTimestamp,
     addDoc, collection 
@@ -288,7 +291,14 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);  
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  async function initAuth() {
+    // 已登入就不用再登
+    if (auth.currentUser) return;
+    await signInAnonymously(auth);
+  }
   let EVAL_ID = null;
   let hasUnsavedOrUnsubmittedWork = false;
   let isSubmitted = false;
@@ -573,6 +583,7 @@
     setStartStatus("基本資料 OK", true);
   
     try {
+      await initAuth();
       const docRef = await addDoc(collection(db, "scores"), {
         rater: {
           dept: v.dept,
@@ -631,6 +642,7 @@ document.getElementById("btnSave").addEventListener("click", async () => {
   }
 
   try {
+    await initAuth();
     await updateDoc(doc(db, "scores", EVAL_ID), {
       updatedAt: serverTimestamp(),
       [`categories.${currentCategory}`]: {
@@ -652,6 +664,7 @@ document.getElementById("btnSave").addEventListener("click", async () => {
 
   // --- 初始化 ---
   setScoringEnabled(false);  // ✅ 一進來先鎖
+  try { await initAuth(); } catch(e) { console.error(e); }
   
   try {
     await loadQuestions(); // ✅ 先把 200 題載進來
