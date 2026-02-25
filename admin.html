@@ -54,7 +54,6 @@
   </thead>
   <tbody></tbody>
 </table>
-
 <script type="module">
 import { 
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
@@ -81,12 +80,11 @@ const auth = getAuth(app);
 /** ========= DOM ========= */
 const tableBody = document.querySelector("#dataTable tbody");
 const btnExport = document.getElementById("btnExport");
+const btnToggleAB = document.getElementById("btnToggleAB");
 
 const btnLogin = document.getElementById("btnLogin");
 const btnLogout = document.getElementById("btnLogout");
 const loginMsg = document.getElementById("loginMsg");
-
-const btnToggleAB = document.getElementById("btnToggleAB");
 
 /** ========= Data ========= */
 const CATEGORIES = [
@@ -122,7 +120,7 @@ btnLogout.addEventListener("click", async () => {
 
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    loginMsg.textContent = `已登入：${user.email}`;
+    loginMsg.textContent = `已登入：${user.email ?? "(no email)"}`;
     btnLogin.style.display = "none";
     btnLogout.style.display = "";
     btnExport.disabled = false;
@@ -133,15 +131,15 @@ onAuthStateChanged(auth, (user) => {
     btnLogin.style.display = "";
     btnLogout.style.display = "none";
     btnExport.disabled = true;
-    exportRows = [];
-    tableBody.innerHTML = "";
     btnToggleAB.disabled = true;
     showAB = false;
     btnToggleAB.textContent = "展開 A/B";
+    exportRows = [];
+    tableBody.innerHTML = "";
   }
 });
 
-/** ========= Load / Render ========= */
+/** ========= Load ========= */
 async function loadData() {
   try {
     const snap = await getDocs(collection(db, "scores"));
@@ -164,16 +162,19 @@ async function loadData() {
 
       CATEGORIES.forEach(cat => {
         const cd = cats[cat];
-      
+
         const a = cd?.scoreA ?? null;
         const b = cd?.scoreB ?? null;
-      
+
         row[cat + "_A"] = a;
         row[cat + "_B"] = b;
-        row[cat] = (a == null || b == null) ? "" : (a + b); // A+B
-      
+        row[cat] = (a == null || b == null) ? "" : (a + b);
+
         row[cat + "_comment"] = cd?.comment ?? "";
       });
+
+      exportRows.push(row);
+    });
 
     renderTable();
     updateSortIcons();
@@ -187,47 +188,7 @@ async function loadData() {
   }
 }
 
-function renderTable() {
-  tableBody.innerHTML = "";
-
-  exportRows.forEach(row => {
-    const tr = document.createElement("tr");
-
-    // 基本欄位
-    tr.appendChild(td(row.name));
-    tr.appendChild(td(row.dept));
-    tr.appendChild(td(row.title));
-
-    // 展開 A/B（10欄）
-    if (showAB) {
-      CATEGORIES.forEach(cat => {
-        tr.appendChild(td(row[cat + "_A"] ?? ""));
-        tr.appendChild(td(row[cat + "_B"] ?? ""));
-      });
-    }
-
-    // A+B（你原本的5欄）
-    tr.appendChild(td(row["化糞池處理"] ?? ""));
-    tr.appendChild(td(row["政策與法規"] ?? ""));
-    tr.appendChild(td(row["施工與技術"] ?? ""));
-    tr.appendChild(td(row["接管流程與期限"] ?? ""));
-    tr.appendChild(td(row["費用與補助"] ?? ""));
-
-    // 評語（5欄）
-    tr.appendChild(td(row["化糞池處理_comment"] ?? "", true));
-    tr.appendChild(td(row["政策與法規_comment"] ?? "", true));
-    tr.appendChild(td(row["施工與技術_comment"] ?? "", true));
-    tr.appendChild(td(row["接管流程與期限_comment"] ?? "", true));
-    tr.appendChild(td(row["費用與補助_comment"] ?? "", true));
-
-    // 總分、送出時間
-    tr.appendChild(td(row.total ?? ""));
-    tr.appendChild(td(row.time ?? ""));
-
-    tableBody.appendChild(tr);
-  });
-}
-
+/** ========= Table render ========= */
 function td(text, preWrap = false) {
   const cell = document.createElement("td");
   cell.textContent = String(text ?? "");
@@ -235,32 +196,39 @@ function td(text, preWrap = false) {
   return cell;
 }
 
-function rebuildHeader() {
-  const headerRow = document.querySelector("#dataTable thead tr");
+function renderTable() {
+  tableBody.innerHTML = "";
 
-  // 移除舊的 AB 欄（我們用 data-ab="1" 標記）
-  headerRow.querySelectorAll("th[data-ab='1']").forEach(th => th.remove());
+  exportRows.forEach(row => {
+    const tr = document.createElement("tr");
 
-  if (!showAB) return;
+    tr.appendChild(td(row.name));
+    tr.appendChild(td(row.dept));
+    tr.appendChild(td(row.title));
 
-  // 在「職稱」後面插入 10 個欄位（每類 A/B）
-  // 目前職稱是第3欄，所以插入點是 index 3
-  const insertAfterIndex = 3;
-  const ths = headerRow.querySelectorAll("th");
-  const refNode = ths[insertAfterIndex]; // 插在它後面
+    if (showAB) {
+      CATEGORIES.forEach(cat => {
+        tr.appendChild(td(row[cat + "_A"] ?? ""));
+        tr.appendChild(td(row[cat + "_B"] ?? ""));
+      });
+    }
 
-  // 依序插入：每個分類 A / B
-  CATEGORIES.forEach(cat => {
-    const thA = document.createElement("th");
-    thA.textContent = `${cat} A`;
-    thA.setAttribute("data-ab", "1");
+    tr.appendChild(td(row["化糞池處理"] ?? ""));
+    tr.appendChild(td(row["政策與法規"] ?? ""));
+    tr.appendChild(td(row["施工與技術"] ?? ""));
+    tr.appendChild(td(row["接管流程與期限"] ?? ""));
+    tr.appendChild(td(row["費用與補助"] ?? ""));
 
-    const thB = document.createElement("th");
-    thB.textContent = `${cat} B`;
-    thB.setAttribute("data-ab", "1");
+    tr.appendChild(td(row["化糞池處理_comment"] ?? "", true));
+    tr.appendChild(td(row["政策與法規_comment"] ?? "", true));
+    tr.appendChild(td(row["施工與技術_comment"] ?? "", true));
+    tr.appendChild(td(row["接管流程與期限_comment"] ?? "", true));
+    tr.appendChild(td(row["費用與補助_comment"] ?? "", true));
 
-    refNode.after(thB);
-    refNode.after(thA);
+    tr.appendChild(td(row.total ?? ""));
+    tr.appendChild(td(row.time ?? ""));
+
+    tableBody.appendChild(tr);
   });
 }
 
@@ -310,34 +278,48 @@ document.querySelectorAll("th.sortable").forEach(th => {
   });
 });
 
-/** ========= CSV Export ========= */
+/** ========= Toggle A/B ========= */
+btnToggleAB.addEventListener("click", () => {
+  showAB = !showAB;
+  btnToggleAB.textContent = showAB ? "收起 A/B" : "展開 A/B";
+  renderTable();
+  updateSortIcons();
+});
+
+/** ========= CSV export ========= */
 btnExport.addEventListener("click", () => {
   if (exportRows.length === 0) {
     alert("沒有可匯出的資料");
     return;
   }
-btnToggleAB.addEventListener("click", () => {
-  showAB = !showAB;
-  btnToggleAB.textContent = showAB ? "收起 A/B" : "展開 A/B";
-
-  rebuildHeader();
-  renderTable();
-  updateSortIcons(); // 讓排序箭頭不亂
-});
 
   const headers = [
     "姓名","科室","職稱",
-    "化糞池處理","政策與法規","施工與技術","接管流程與期限","費用與補助",
+    ...(showAB ? [
+      "化糞池處理A","化糞池處理B",
+      "政策與法規A","政策與法規B",
+      "施工與技術A","施工與技術B",
+      "接管流程與期限A","接管流程與期限B",
+      "費用與補助A","費用與補助B",
+    ] : []),
+    "化糞池處理(A+B)","政策與法規(A+B)","施工與技術(A+B)","接管流程與期限(A+B)","費用與補助(A+B)",
     "化糞池處理評語","政策與法規評語","施工與技術評語","接管流程與期限評語","費用與補助評語",
     "總分","送出時間"
   ];
 
-  const rows = exportRows.map(r => [
+  const rows = exportRows.map(r => ([
     r.name, r.dept, r.title,
-    r["化糞池處理"], r["政策與法規"], r["施工與技術"], r["接管流程與期限"], r["費用與補助"],
-    r["化糞池處理_comment"], r["政策與法規_comment"], r["施工與技術_comment"], r["接管流程與期限_comment"], r["費用與補助_comment"],
-    r.total, r.time
-  ]);
+    ...(showAB ? [
+      r["化糞池處理_A"] ?? "", r["化糞池處理_B"] ?? "",
+      r["政策與法規_A"] ?? "", r["政策與法規_B"] ?? "",
+      r["施工與技術_A"] ?? "", r["施工與技術_B"] ?? "",
+      r["接管流程與期限_A"] ?? "", r["接管流程與期限_B"] ?? "",
+      r["費用與補助_A"] ?? "", r["費用與補助_B"] ?? "",
+    ] : []),
+    r["化糞池處理"] ?? "", r["政策與法規"] ?? "", r["施工與技術"] ?? "", r["接管流程與期限"] ?? "", r["費用與補助"] ?? "",
+    r["化糞池處理_comment"] ?? "", r["政策與法規_comment"] ?? "", r["施工與技術_comment"] ?? "", r["接管流程與期限_comment"] ?? "", r["費用與補助_comment"] ?? "",
+    r.total ?? "", r.time ?? ""
+  ]));
 
   const escapeCsv = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const csvBody = [headers, ...rows].map(line => line.map(escapeCsv).join(",")).join("\n");
@@ -354,6 +336,7 @@ btnToggleAB.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 </script>
+
 
 </body>
 </html>
