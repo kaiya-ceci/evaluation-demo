@@ -84,11 +84,13 @@
     
     /* 右側「本類評分」卡片 */
     .scoreCard{
+      /* 讓本類評分跟其他卡片同一套，只是底色淡灰 */
       background:#f8fafc;
       border:1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 12px;
-      margin-top: 10px;
+      border-radius:14px;
+      padding:16px 18px;
+      margin-top:16px;
+      box-shadow:0 6px 18px rgba(17, 24, 39, 0.06);
     }
     .scoreCardTitle{
       display:flex;
@@ -100,11 +102,10 @@
     
     /* 右下角 status 也稍微美化 */
     .status{
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 10px;
-      background:#fff;
-      border:1px solid #e5e7eb;
+      margin-top: 0;   /* 交給外層 sectionCard 的 margin-top */
+      padding: 0;      /* 交給外層 sectionCard 的 padding */
+      border: 0;
+      background: transparent;
     }
     /* 小螢幕：兩欄改一欄，避免基本資料被擠爆 */
     @media (max-width: 720px) {
@@ -121,6 +122,20 @@
     }
     .container * {
       box-sizing: border-box;
+    }
+    /* ✅ 統一：右側各段落都用同一種卡片感（含下方總覽/狀態） */
+    .sectionCard{
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:14px;
+      padding:16px 18px;
+      margin-top:16px;
+      box-shadow:0 6px 18px rgba(17, 24, 39, 0.06);
+    }
+    
+    /* 本類評分想要淡灰底（保留你的視覺層次） */
+    .sectionCard.light{
+      background:#f8fafc;
     }
   </style>
 </head>
@@ -169,7 +184,7 @@
   <div class="col left">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <strong>題目清單</strong>
-      <span class="hint">題目清單</span>
+      <span class="hint">可點選上方選單切換</span>
     </div>
     <div id="qList" style="margin-top: 10px; max-height: 70vh; overflow: auto;"></div>
   </div>
@@ -185,7 +200,7 @@
     <div class="scoreCard">
       <div class="scoreCardTitle">
         <span>本類評分</span>
-        <span class="hint">分類層級（不是每題）</span>
+        <span class="hint">請針對本類型表現綜合評分</span>
       </div>
     
       <div class="grid2" style="margin-top:10px;">
@@ -210,7 +225,7 @@
         <button id="btnClear" type="button">清空本題輸入</button>
       </div>
     </div>
-    <div class="col" style="margin-top:12px; border-color:#eee;">
+    <div class="sectionCard" style="margin-top:12px; border-color:#eee;">
       <strong>本次評分總覽</strong>
       <div class="hint" id="progressText" style="margin-top:6px;">尚未開始</div>
     
@@ -230,9 +245,10 @@
         <span class="hint">需五類皆填 A/B 才能送出</span>
       </div>
     </div>
-
-    <div class="status" id="status"></div>
-    <div class="hint"> 記得儲存評分結果喔！</div>
+    
+    <div class="sectionCard">
+      <div class="status" id="status"></div>
+      <div class="hint"> 記得儲存評分結果喔！</div>
   </div>
 </div>
 
