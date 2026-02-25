@@ -179,6 +179,10 @@
 <button id="btnToggleAB" disabled>展開 A/B</button>
 <button id="btnReload" disabled>重新載入資料</button>
 <span id="reloadMsg" style="margin-left:8px; color:#666;"></span>
+
+<span id="stats" style="margin-left:12px; color:#111827; font-weight:700;"></span>
+<span id="lastUpdated" style="margin-left:10px; color:#6b7280;"></span>
+
 <div class="infoBox">
   <strong>📌 使用說明</strong>
   <ul>
@@ -235,6 +239,9 @@ const btnToggleAB = document.getElementById("btnToggleAB");
 const btnReload = document.getElementById("btnReload");
 const reloadMsg = document.getElementById("reloadMsg");
 
+const elStats = document.getElementById("stats");
+const elLastUpdated = document.getElementById("lastUpdated");
+
 const btnLogin = document.getElementById("btnLogin");
 const btnLogout = document.getElementById("btnLogout");
 const loginMsg = document.getElementById("loginMsg");
@@ -282,6 +289,8 @@ onAuthStateChanged(auth, async (user) => {
 
     exportRows = [];
     tableBody.innerHTML = "";
+    elStats.textContent = "";
+    elLastUpdated.textContent = "";
     renderHeader();
     return;
   }
@@ -340,6 +349,11 @@ async function loadData() {
     renderTable();
     updateSortIcons();
 
+    // ✅ 顯示資料筆數 + 最後更新時間
+    elStats.textContent = `資料筆數：${exportRows.length} 筆`;
+    elLastUpdated.textContent = `最後更新：${formatNow()}`;
+
+
     const colCount = 3 + CAT_META.length * (showAB ? 4 : 2) + 2;
     if (exportRows.length === 0) {
       tableBody.innerHTML =
@@ -384,6 +398,12 @@ function th(text, { key=null, cls="", sticky=null, widthCls="" } = {}) {
     el.addEventListener("click", () => sortBy(key));
   }
   return el;
+}
+
+function formatNow() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
 /** ========= Header ========= */
