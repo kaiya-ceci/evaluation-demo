@@ -17,6 +17,15 @@
 <body>
 
 <h2>評分管理端</h2>
+  <div id="loginBox" style="margin:12px 0; padding:12px; border:1px solid #ddd; border-radius:8px; max-width:420px;">
+  <div style="display:flex; gap:8px; margin-bottom:8px;">
+    <input id="email" placeholder="Admin Email" style="flex:1; padding:8px;">
+    <input id="password" placeholder="Password" type="password" style="flex:1; padding:8px;">
+  </div>
+  <button id="btnLogin">登入</button>
+  <button id="btnLogout" style="display:none;">登出</button>
+  <span id="loginMsg" style="margin-left:8px; color:#666;"></span>
+</div>
 
 <button id="btnExport">下載 CSV</button>
 
@@ -44,6 +53,10 @@
 </table>
 
 <script type="module">
+import { 
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
 import { initializeApp } 
   from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 
@@ -59,6 +72,51 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+
+const tableBody = document.querySelector("#dataTable tbody");
+const btnExport = document.getElementById("btnExport");
+
+let exportRows = [];
+let sortKey = null;
+let sortAsc = true;
+
+const loginBox = document.getElementById("loginBox");
+const btnLogin = document.getElementById("btnLogin");
+const btnLogout = document.getElementById("btnLogout");
+const loginMsg = document.getElementById("loginMsg");
+
+btnLogin.addEventListener("click", async () => {
+  loginMsg.textContent = "登入中…";
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (e) {
+    console.error(e);
+    loginMsg.textContent = "登入失敗（帳密錯誤或未開啟 Email/Password）";
+  }
+});
+
+btnLogout.addEventListener("click", async () => {
+  await signOut(auth);
+});
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    loginMsg.textContent = `已登入：${user.email}`;
+    btnLogin.style.display = "none";
+    btnLogout.style.display = "";
+    // ✅ 登入後才讀資料
+    loadData();
+  } else {
+    loginMsg.textContent = "尚未登入";
+    btnLogin.style.display = "";
+    btnLogout.style.display = "none";
+    tableBody.innerHTML = "";
+    exportRows = [];
+  }
+});
 
 const CATEGORIES = [
   "化糞池處理",
@@ -68,21 +126,15 @@ const CATEGORIES = [
   "費用與補助"
 ];
 
-const tableBody = document.querySelector("#dataTable tbody");
-const btnExport = document.getElementById("btnExport");
-
-let exportRows = [];
-
 async function loadData() {
   try {
     const snap = await getDocs(collection(db, "scores"));
 
-    tableBody.innerHTML = "";
     exportRows = [];
 
     snap.forEach(docSnap => {
       const data = docSnap.data();
-      if (data.submitted !== true) return; // 只抓已送出
+      if (data.submitted !== true) return;
 
       const r = data.rater || {};
       const cats = data.categories || {};
@@ -102,6 +154,23 @@ async function loadData() {
       });
 
       exportRows.push(row);
+    });
+
+    // ✅ 你想要預設排序的話，取消註解其中一段
+    // sortBy("total");        // 預設總分排序（第一次會升序）
+    // sortKey = "total"; sortAsc = false; updateSortIcons(); sortBy("total"); // 直接預設總分高到低
+
+    renderTable();
+    updateSortIcons();
+
+    if (exportRows.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="15" style="text-align:center;color:#666;">目前沒有「已送出」資料</td></tr>`;
+    }
+  } catch (err) {
+    console.error(err);
+    alert("讀取 Firestore 失敗，請看 Console");
+  }
+}
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -274,6 +343,21 @@ function sortBy(key) {
   });
 
   renderTable();
+  updateSortIcons();
+}
+
+function updateSortIcons() {
+  document.querySelectorAll("th.sortable").forEach(th => {
+    const key = th.getAttribute("data-key");
+    const baseText = th.getAttribute("data-label") || th.textContent.replace(/[↑↓↕]\s*$/, "").trim();
+    th.setAttribute("data-label", baseText);
+
+    if (key === sortKey) {
+      th.textContent = `${baseText} ${sortAsc ? "↑" : "↓"}`;
+    } else {
+      th.textContent = `${baseText} ↕`;
+    }
+  });
 }
 
 // 綁定 sortable 表頭
@@ -283,7 +367,6 @@ document.querySelectorAll("th.sortable").forEach(th => {
     sortBy(key);
   });
 });
-loadData();
 </script>
 
 </body>
