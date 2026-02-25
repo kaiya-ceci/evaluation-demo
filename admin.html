@@ -312,10 +312,10 @@ async function loadData() {
         dept: r.dept || "",
         title: r.title || "",
         total: data.totalScore ?? 0,
+        avg: data.avgScore ?? "",
         time: timeStr,
         timeMs
       };
-
       CAT_META.forEach(({name}) => {
         const cd = cats[name];
         const a = cd?.scoreA ?? null;
@@ -399,6 +399,7 @@ function renderHeader() {
   });
 
   headerRow.appendChild(th("總分 ↕", { key:"total", cls:["cat-total","totalCol"] }));
+  headerRow.appendChild(th("平均分 ↕", { key:"avg", cls:"cat-total totalCol" }));
   headerRow.appendChild(th("送出時間 ↕", { key:"timeMs", cls:["cat-total","timeCol"] }));
 }
 
@@ -428,6 +429,7 @@ function renderTable() {
     });
 
     tr.appendChild(td(row.total ?? "", { cls:["cat-total","totalCol"] }));
+    tr.appendChild(td(row.avg ?? "", { cls:"cat-total totalCol" }));
     tr.appendChild(td(row.time ?? "", { cls:["cat-total","timeCol"] }));
 
     tableBody.appendChild(tr);
