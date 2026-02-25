@@ -196,6 +196,90 @@
     .answerPane{
       -webkit-overflow-scrolling: touch;
     }
+    /* =========================
+       ✅ Mobile / RWD Fix (必加)
+       ========================= */
+    @media (max-width: 900px){
+    
+      /* 整體留白縮小，不要擠 */
+      .container{
+        padding: 14px 12px;
+      }
+    
+      /* ✅ 三欄 → 單欄（關鍵！） */
+      .row3{
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+    
+      /* 每個欄位卡片撐滿 */
+      .col{
+        width: 100% !important;
+        padding: 14px !important;
+        border-radius: 14px;
+      }
+    
+      /* 分類下拉選單太窄的問題 */
+      #category{
+        width: 100% !important;
+      }
+    
+      /* ✅ 左欄題目清單：限制高度，滑就好 */
+      .col.left #qList{
+        max-height: 40vh !important;
+        overflow: auto !important;
+      }
+    
+      /* 題目項目字變大一點、間距舒服 */
+      .qitem{
+        padding: 12px !important;
+        margin-bottom: 10px !important;
+      }
+      .qitem strong{
+        font-size: 16px;
+      }
+    
+      /* ✅ 答案區：不要固定 70vh，手機用 max-height 控制 */
+      .col.mid .answerPane{
+        height: auto !important;
+        max-height: 45vh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+      }
+    
+      /* 內容卡片：字級、行高調舒服 */
+      .contentCard{
+        font-size: 15px !important;
+        line-height: 1.7 !important;
+        padding: 12px !important;
+      }
+    
+      /* ✅ 右欄評分：手機不要 sticky（會卡畫面） */
+      .col.right .scorePane{
+        position: static !important;
+        top: auto !important;
+      }
+    
+      /* grid2：兩欄輸入在手機變單欄 */
+      .grid2{
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+    
+      /* 所有表單元素都撐滿 */
+      select, input, textarea, button{
+        width: 100% !important;
+        max-width: 100% !important;
+        font-size: 15px !important;
+      }
+    
+      /* 評分卡內按鈕：手機改成直排比較不擠 */
+      .scoreCard > div[style*="display:flex"]{
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+    }
 
     
   </style>
