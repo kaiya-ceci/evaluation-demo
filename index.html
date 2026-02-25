@@ -113,8 +113,44 @@
       .grid2 { grid-template-columns: 1fr !important; }
       .grid2 > div { min-width: 0; }
       select, input, textarea { width: 100%; min-width: 0; }
+      .scorePane{
+        position: static;
+      }
+      .answerPane{
+        max-height: none;
+      }
     }
     .container * { box-sizing: border-box; }
+    
+    /* 右欄：分成上下兩塊（答案捲動、評分固定） */
+    .col.right{
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    /* ✅ 答案區固定高度、內容可捲動 */
+    .answerPane{
+      flex: 1 1 auto;
+      min-height: 260px;          /* 你想更大可調 */
+      max-height: 42vh;           /* 控制答案區最多佔畫面高度 */
+      overflow: auto;
+      padding-right: 6px;         /* 避免捲軸壓到文字 */
+    }
+    
+    /* ✅ 評分區固定（跟著視窗滑動時，不會跑掉） */
+    .scorePane{
+      flex: 0 0 auto;
+      position: sticky;
+      top: 12px;
+    }
+    
+    /* 讓捲動在 iOS/手機上更順（可有可無） */
+    .answerPane{
+      -webkit-overflow-scrolling: touch;
+    }
+
+    
   </style>
 </head>
 <body>
@@ -167,67 +203,73 @@
       </div>
 
       <div class="col right">
-        <div class="label">簡答</div>
-        <div id="aText" class="contentCard"></div>
-
-        <div class="label">詳答</div>
-        <div id="aLongText" class="contentCard"></div>
-
-        <div class="scoreCard">
-          <div class="scoreCardTitle">
-            <span id="scoreTitle">本類評分</span>
-            <span class="hint">請針對本類型表現綜合評分</span>
-          </div>
-
-          <div class="grid2" style="margin-top:10px;">
-            <div>
-              <div class="label">內容正確性 A（0~50）</div>
-              <input id="scoreA" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
-            </div>
-            <div>
-              <div class="label">語意完整性 B（0~50）</div>
-              <input id="scoreB" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
-            </div>
-          </div>
-
-          <div class="label">評語（可空白，最多 200 字）</div>
-          <textarea id="comment" placeholder="可留空" maxlength="200"></textarea>
-          <div class="hint" style="text-align:right;">
-            <span id="commentCount">0</span>/200
-          </div>
-
-          <div style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
-            <button id="btnSave" type="button">儲存本類結果</button>
-            <button id="btnClear" type="button">清空本題輸入</button>
-          </div>
+        <!-- ✅ 答案區：固定高度 + 內部捲動 -->
+        <div class="answerPane">
+          <div class="label">簡答</div>
+          <div id="aText" class="contentCard"></div>
+  
+          <div class="label">詳答</div>
+          <div id="aLongText" class="contentCard"></div>
         </div>
 
-        <div class="sectionCard" style="margin-top:12px; border-color:#eee;">
-          <strong>評分總覽</strong>
-          <div class="hint" id="progressText" style="margin-top:6px;">尚未開始</div>
-
-          <div class="grid2" style="margin-top:10px;">
-            <div>
-              <div class="label">總分（5A+5B）</div>
-              <div id="totalScore" style="font-size:20px; font-weight:700;">-</div>
+        <!-- ✅ 評分區：固定位置（sticky） -->
+        <div class="scorePane">
+          <div class="scoreCard">
+            <div class="scoreCardTitle">
+              <span id="scoreTitle">本類評分</span>
+              <span class="hint">請針對本類型表現綜合評分</span>
             </div>
-            <div>
-              <div class="label">完成度</div>
-              <div id="doneCount" style="font-size:20px; font-weight:700;">0/5</div>
+  
+            <div class="grid2" style="margin-top:10px;">
+              <div>
+                <div class="label">內容正確性 A（0~50）</div>
+                <input id="scoreA" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
+              </div>
+              <div>
+                <div class="label">語意完整性 B（0~50）</div>
+                <input id="scoreB" type="number" min="0" max="50" step="1" placeholder="0~50" style="width:100%;" />
+              </div>
+            </div>
+  
+            <div class="label">評語（可空白，最多 200 字）</div>
+            <textarea id="comment" placeholder="可留空" maxlength="200"></textarea>
+            <div class="hint" style="text-align:right;">
+              <span id="commentCount">0</span>/200
+            </div>
+  
+            <div style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
+              <button id="btnSave" type="button">儲存本類結果</button>
+              <button id="btnClear" type="button">清空本題輸入</button>
             </div>
           </div>
-
-          <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
-            <button id="btnSubmit" type="button">確認送出（完成後鎖定）</button>
-            <span class="hint">需五類皆填 A/B 才能送出</span>
+  
+          <div class="sectionCard" style="margin-top:12px; border-color:#eee;">
+            <strong>評分總覽</strong>
+            <div class="hint" id="progressText" style="margin-top:6px;">尚未開始</div>
+  
+            <div class="grid2" style="margin-top:10px;">
+              <div>
+                <div class="label">總分（5A+5B）</div>
+                <div id="totalScore" style="font-size:20px; font-weight:700;">-</div>
+              </div>
+              <div>
+                <div class="label">完成度</div>
+                <div id="doneCount" style="font-size:20px; font-weight:700;">0/5</div>
+              </div>
+            </div>
+  
+            <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+              <button id="btnSubmit" type="button">確認送出（完成後鎖定）</button>
+              <span class="hint">需五類皆填 A/B 才能送出</span>
+            </div>
           </div>
-        </div>
-
-        <div class="sectionCard">
-          <div class="status" id="status"></div>
+  
+          <div class="sectionCard">
+            <div class="status" id="status"></div>
+          </div>
         </div>
       </div>
-    </div>
+     </div>
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
