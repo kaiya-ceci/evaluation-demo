@@ -51,6 +51,46 @@
   .w-name { min-width:90px; }
   .w-dept { min-width:130px; }
   .w-title{ min-width:120px; }
+
+  /* =========================
+     ✅ Admin 表格穩定版
+     ========================= */
+  
+  /* 表格固定佈局（關鍵） */
+  table {
+    width: 100%;
+    table-layout: fixed;   /* ⭐ 讓欄寬固定 */
+    border-collapse: collapse;
+  }
+  
+  /* 所有儲存格統一處理 */
+  th, td {
+    padding: 8px 10px;
+    border: 1px solid #e5e7eb;
+    vertical-align: top;
+    word-break: break-word;      /* ⭐ 長字串強制換行 */
+    overflow-wrap: anywhere;     /* ⭐ 任何地方都能斷行 */
+    white-space: normal;         /* ⭐ 允許自動換行 */
+  }
+  
+  /* =========================
+     指定欄寬（可依需求微調）
+     ========================= */
+  
+  th:nth-child(1), td:nth-child(1) { width: 70px; }   /* 姓名 */
+  th:nth-child(2), td:nth-child(2) { width: 140px; }  /* 科室 */
+  th:nth-child(3), td:nth-child(3) { width: 100px; }  /* 職稱 */
+  th:nth-child(4), td:nth-child(4) { width: 120px; }  /* 化糞池處理 A+B */
+  
+  /* 如果你有評語欄位（假設第5欄） */
+  th:nth-child(5), td:nth-child(5) {
+    width: 320px;            /* ⭐ 評語固定寬 */
+  }
+  
+  /* 表格外層可橫向滑動（手機用） */
+  .tableWrapper {
+    overflow-x: auto;
+  }
 </style>
 </head>
 <body>
