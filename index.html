@@ -344,6 +344,15 @@
       font-weight: 900;
       color: #111827;
     }
+    
+    /* 平均分顏色判斷 */
+    .avg-high{
+      color: #0284c7;   /* 85↑ 藍色 */
+    }
+    
+    .avg-low{
+      color: #dc2626;   /* 85↓ 紅色 */
+    }
 
     
   </style>
@@ -741,8 +750,23 @@
           if (done === 0) {
             elAvgScore.textContent = "-";
           } else {
-            const avg = total / 5;
-            elAvgScore.textContent = String(Math.round(avg * 10) / 10); // 例如 80 或 80.4
+            if (done === 0) {
+              elAvgScore.textContent = "-";
+              elAvgScore.classList.remove("avg-high","avg-low");
+            } else {
+              const avg = Math.round((total / 5) * 10) / 10;
+              elAvgScore.textContent = String(avg);
+            
+              // 先清掉舊顏色
+              elAvgScore.classList.remove("avg-high","avg-low");
+            
+              // ⭐ 判斷顏色
+              if (avg >= 85) {
+                elAvgScore.classList.add("avg-high");
+              } else {
+                elAvgScore.classList.add("avg-low");
+              }
+            }
           }
           if (isSubmitted) {
             elProgressText.textContent = "✅ 已送出（已鎖定）";
