@@ -5,21 +5,54 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>臺中市水利局AI小幫手測試-評分結果瀏覽</title>
 <style>
-  body { font-family: system-ui; margin:20px; }
-  table { border-collapse: collapse; width:100%; margin-top:15px; }
-  th, td { border:1px solid #ddd; padding:8px; font-size:14px; vertical-align: top; }
-  th { background:#f3f4f6; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; margin:20px; }
+
   button { padding:8px 14px; font-size:14px; }
+
+  /* ✅ 表格捲動容器（左右都可捲） */
+  .tableWrap{
+    margin-top:15px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    overflow:auto;
+    max-height: 72vh;         /* ✅ 上下可捲 */
+    background:#fff;
+  }
+
+  table { border-collapse: collapse; width: max-content; min-width: 100%; }
+  th, td { border:1px solid #ddd; padding:8px; font-size:14px; vertical-align: top; }
+  th { background:#f3f4f6; white-space:nowrap; }
+
+  /* ✅ sticky 表頭 */
+  thead th{
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
   th.sortable { cursor: pointer; user-select: none; }
   th.sortable:hover { background: #e5e7eb; }
+
+  /* 讓評語換行 */
+  td.pre { white-space: pre-wrap; min-width: 220px; }
+
+  /* 欄位稍微不要太擠 */
+  td, th { white-space: nowrap; }
+  td.pre { white-space: pre-wrap; }
+
+  /* 小螢幕：登入框自動換行 */
+  @media (max-width: 600px) {
+    #loginBox .row { flex-direction: column; }
+    #loginBox input { width:100%; }
+  }
 </style>
 </head>
 <body>
 
 <h2>臺中市水利局AI小幫手測試-評分結果瀏覽</h2>
 
-<div id="loginBox" style="margin:12px 0; padding:12px; border:1px solid #ddd; border-radius:8px; max-width:420px;">
-  <div style="display:flex; gap:8px; margin-bottom:8px;">
+<div id="loginBox" style="margin:12px 0; padding:12px; border:1px solid #ddd; border-radius:8px; max-width:520px;">
+  <div class="row" style="display:flex; gap:8px; margin-bottom:8px;">
     <input id="email" placeholder="Admin Email" style="flex:1; padding:8px;">
     <input id="password" placeholder="Password" type="password" style="flex:1; padding:8px;">
   </div>
@@ -28,26 +61,30 @@
   <span id="loginMsg" style="margin-left:8px; color:#666;"></span>
 </div>
 
-<button id="btnExport" disabled>下載 CSV</button>
-<button id="btnToggleAB" disabled>展開 A/B</button>
-  
+<div style="display:flex; gap:10px; align-items:center;">
+  <button id="btnExport" disabled>下載 CSV</button>
+  <button id="btnToggleAB" disabled>展開 A/B</button>
+</div>
 
-<table id="dataTable">
-  <thead>
-    <tr id="headerRow"></tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<div class="tableWrap">
+  <table id="dataTable">
+    <thead>
+      <tr id="headerRow"></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
 <script type="module">
-import { 
+import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-import { initializeApp } 
+import { initializeApp }
   from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 
-import { 
-  getFirestore, collection, getDocs 
+import {
+  getFirestore, collection, getDocs
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 /** ========= Firebase init ========= */
@@ -63,6 +100,8 @@ const auth = getAuth(app);
 
 /** ========= DOM ========= */
 const tableBody = document.querySelector("#dataTable tbody");
+const headerRow = document.getElementById("headerRow");
+
 const btnExport = document.getElementById("btnExport");
 const btnToggleAB = document.getElementById("btnToggleAB");
 
@@ -84,7 +123,47 @@ let sortKey = null;
 let sortAsc = true;
 let showAB = false;
 
-/** ========= Auth UI ========= */
+/** ========= Helpers ========= */
+function td(text, preWrap = false) {
+  const cell = document.createElement("td");
+  cell.textContent = String(text ?? "");
+  if (preWrap) cell.classList.add("pre");
+  return cell;
+}
+
+function normalizeNumber(v) {
+  // 用來排序：null/"" 視為空
+  if (v === "" || v === null || typeof v === "undefined") return null;
+  const n = Number(v);
+  if (Number.isNaN(n)) return null;
+  return n;
+}
+
+function toMillis(v) {
+  // 支援：Date、timestamp-like、字串時間
+  if (!v) return null;
+
+  // Firestore Timestamp（你這邊已經 toLocaleString 了，但保險）
+  if (typeof v === "object" && typeof v.toDate === "function") {
+    return v.toDate().getTime();
+  }
+
+  if (v instanceof Date) return v.getTime();
+
+  // 若你存的是 "2026/2/25 上午11:29:15" 這種 toLocaleString
+  // 直接 Date.parse 可能吃不到，給一個 fallback：先用原字串 parse，失敗就 null
+  const t = Date.parse(v);
+  if (!Number.isNaN(t)) return t;
+
+  return null;
+}
+
+function colCountNow(){
+  // 3固定 + (AB?) + 5(A+B) + 5評語 + 2(總分/時間)
+  return 3 + (showAB ? CATEGORIES.length * 2 : 0) + CATEGORIES.length + CATEGORIES.length + 2;
+}
+
+/** ========= Auth ========= */
 btnLogin.addEventListener("click", async () => {
   loginMsg.textContent = "登入中…";
   const email = document.getElementById("email").value.trim();
@@ -103,21 +182,19 @@ btnLogout.addEventListener("click", async () => {
 });
 
 onAuthStateChanged(auth, async (user) => {
-  // 未登入
   if (!user) {
     loginMsg.textContent = "尚未登入";
     btnLogin.style.display = "";
     btnLogout.style.display = "none";
     btnExport.disabled = true;
     btnToggleAB.disabled = true;
-
     exportRows = [];
     tableBody.innerHTML = "";
-    renderHeader(); // 讓表頭至少存在
+    renderHeader();
     return;
   }
 
-  // 匿名或沒有 email → 不給看（防止前端匿名登入影響 admin）
+  // 匿名或沒有 email → 不給看
   if (user.isAnonymous || !user.email) {
     await signOut(auth);
     loginMsg.textContent = "請使用管理員 Email/Password 登入（不接受匿名登入）";
@@ -125,24 +202,19 @@ onAuthStateChanged(auth, async (user) => {
     btnLogout.style.display = "none";
     btnExport.disabled = true;
     btnToggleAB.disabled = true;
-
     exportRows = [];
     tableBody.innerHTML = "";
     renderHeader();
     return;
   }
 
-  // 管理員登入成功
   loginMsg.textContent = `已登入：${user.email}`;
   btnLogin.style.display = "none";
   btnLogout.style.display = "";
   btnExport.disabled = false;
   btnToggleAB.disabled = false;
 
-  // ✅ 先畫表頭（依 showAB 狀態）
   renderHeader();
-
-  // ✅ 再讀資料，loadData 內會 renderTable + updateSortIcons
   await loadData();
 });
 
@@ -159,17 +231,20 @@ async function loadData() {
       const r = data.rater || {};
       const cats = data.categories || {};
 
+      // ✅ 另外存一個 timeMs 供排序（time 照舊顯示字串）
+      const submittedAt = data.submittedAt ?? null;
+
       const row = {
         name: r.name || "",
         dept: r.dept || "",
         title: r.title || "",
         total: data.totalScore ?? 0,
-        time: data.submittedAt?.toDate?.().toLocaleString() || ""
+        time: submittedAt?.toDate?.().toLocaleString?.() || "",
+        timeMs: submittedAt?.toDate?.().getTime?.() ?? null
       };
 
       CATEGORIES.forEach(cat => {
         const cd = cats[cat];
-
         const a = cd?.scoreA ?? null;
         const b = cd?.scoreB ?? null;
 
@@ -182,18 +257,17 @@ async function loadData() {
       exportRows.push(row);
     });
 
-    // ✅ 這三個只做一次就好
-    renderHeader();
-    renderTable();
-    updateSortIcons();
-
-    // ✅ 沒資料提示（colspan 要跟 showAB 同步）
-    const colCount =
-      3 + (showAB ? CATEGORIES.length * 2 : 0) + CATEGORIES.length + CATEGORIES.length + 2;
+    // 若之前有排序，重新載入後保留排序
+    if (sortKey) {
+      sortBy(sortKey, true); // silent
+    } else {
+      renderTable();
+      updateSortIcons();
+    }
 
     if (exportRows.length === 0) {
       tableBody.innerHTML =
-        `<tr><td colspan="${colCount}" style="text-align:center;color:#666;">目前沒有「已送出」資料</td></tr>`;
+        `<tr><td colspan="${colCountNow()}" style="text-align:center;color:#666;">目前沒有「已送出」資料</td></tr>`;
     }
   } catch (err) {
     console.error(err);
@@ -201,53 +275,47 @@ async function loadData() {
   }
 }
 
-/** ========= Table render ========= */
-function td(text, preWrap = false) {
-  const cell = document.createElement("td");
-  cell.textContent = String(text ?? "");
-  if (preWrap) cell.style.whiteSpace = "pre-wrap";
-  return cell;
-}
-
-const headerRow = document.getElementById("headerRow");
-
+/** ========= Header & Table ========= */
 function renderHeader() {
   headerRow.innerHTML = "";
 
-  const addTh = (text, key = null) => {
+  const addTh = (text, key = null, type = "text") => {
     const th = document.createElement("th");
     th.textContent = text;
+
     if (key) {
       th.classList.add("sortable");
       th.dataset.key = key;
+      th.dataset.type = type; // ✅ number / date / text
       th.addEventListener("click", () => sortBy(key));
     }
     headerRow.appendChild(th);
   };
 
-  // 固定欄
-  addTh("姓名");
-  addTh("科室");
-  addTh("職稱");
+  // 固定欄（文字排序你要也可以給 key）
+  addTh("姓名 ↕", "name", "text");
+  addTh("科室 ↕", "dept", "text");
+  addTh("職稱 ↕", "title", "text");
 
-  // 展開 A/B（10欄，不做排序）
+  // ✅ 展開 A/B（現在也可排序）
   if (showAB) {
     CATEGORIES.forEach(cat => {
-      addTh(`${cat} A`);
-      addTh(`${cat} B`);
+      addTh(`${cat} A ↕`, `${cat}_A`, "number");
+      addTh(`${cat} B ↕`, `${cat}_B`, "number");
     });
   }
 
   // A+B 欄（可排序）
-  CATEGORIES.forEach(cat => addTh(`${cat} ↕`, cat));
+  CATEGORIES.forEach(cat => addTh(`${cat} ↕`, cat, "number"));
 
-  // 評語
+  // 評語（不排序）
   CATEGORIES.forEach(cat => addTh(`${cat}評語`));
 
-  // 總分（可排序）、送出時間（你要排序的話也可以加 key）
-  addTh("總分 ↕", "total");
-  addTh("送出時間");
+  // 總分（數字排序）＆送出時間（日期排序）
+  addTh("總分 ↕", "total", "number");
+  addTh("送出時間 ↕", "timeMs", "date");
 }
+
 function renderTable() {
   tableBody.innerHTML = "";
 
@@ -265,17 +333,9 @@ function renderTable() {
       });
     }
 
-    tr.appendChild(td(row["化糞池處理"] ?? ""));
-    tr.appendChild(td(row["政策與法規"] ?? ""));
-    tr.appendChild(td(row["施工與技術"] ?? ""));
-    tr.appendChild(td(row["接管流程與期限"] ?? ""));
-    tr.appendChild(td(row["費用與補助"] ?? ""));
+    CATEGORIES.forEach(cat => tr.appendChild(td(row[cat] ?? "")));
 
-    tr.appendChild(td(row["化糞池處理_comment"] ?? "", true));
-    tr.appendChild(td(row["政策與法規_comment"] ?? "", true));
-    tr.appendChild(td(row["施工與技術_comment"] ?? "", true));
-    tr.appendChild(td(row["接管流程與期限_comment"] ?? "", true));
-    tr.appendChild(td(row["費用與補助_comment"] ?? "", true));
+    CATEGORIES.forEach(cat => tr.appendChild(td(row[cat + "_comment"] ?? "", true)));
 
     tr.appendChild(td(row.total ?? ""));
     tr.appendChild(td(row.time ?? ""));
@@ -285,25 +345,49 @@ function renderTable() {
 }
 
 /** ========= Sorting ========= */
-function sortBy(key) {
-  if (sortKey === key) sortAsc = !sortAsc;
-  else { sortKey = key; sortAsc = true; }
+function sortBy(key, silent = false) {
+  if (!silent) {
+    if (sortKey === key) sortAsc = !sortAsc;
+    else { sortKey = key; sortAsc = true; }
+  } else {
+    // silent mode：不翻轉，只依現有 sortKey/sortAsc
+    if (!sortKey) sortKey = key;
+  }
+
+  // 找到這個 key 的型別（從 th 上拿）
+  const th = document.querySelector(`th.sortable[data-key="${CSS.escape(key)}"]`);
+  const type = th?.dataset?.type || "text";
 
   exportRows.sort((a, b) => {
-    const av = a[key] ?? "";
-    const bv = b[key] ?? "";
+    const av = a[key];
+    const bv = b[key];
 
+    // 空值永遠排最後
     const aEmpty = av === "" || av === null || typeof av === "undefined";
     const bEmpty = bv === "" || bv === null || typeof bv === "undefined";
     if (aEmpty && bEmpty) return 0;
     if (aEmpty) return 1;
     if (bEmpty) return -1;
 
-    const an = Number(av);
-    const bn = Number(bv);
-    const cmp = (Number.isNaN(an) || Number.isNaN(bn))
-      ? String(av).localeCompare(String(bv))
-      : (an - bn);
+    let cmp = 0;
+
+    if (type === "number") {
+      const an = normalizeNumber(av);
+      const bn = normalizeNumber(bv);
+      if (an === null && bn === null) cmp = 0;
+      else if (an === null) cmp = 1;
+      else if (bn === null) cmp = -1;
+      else cmp = an - bn;
+    } else if (type === "date") {
+      const at = typeof av === "number" ? av : toMillis(av);
+      const bt = typeof bv === "number" ? bv : toMillis(bv);
+      if (at === null && bt === null) cmp = 0;
+      else if (at === null) cmp = 1;
+      else if (bt === null) cmp = -1;
+      else cmp = at - bt;
+    } else {
+      cmp = String(av).localeCompare(String(bv), "zh-Hant");
+    }
 
     return sortAsc ? cmp : -cmp;
   });
@@ -314,21 +398,16 @@ function sortBy(key) {
 
 function updateSortIcons() {
   document.querySelectorAll("th.sortable").forEach(th => {
-    const key = th.getAttribute("data-key");
-    const baseText = th.getAttribute("data-label") || th.textContent.replace(/[↑↓↕]\s*$/, "").trim();
+    const key = th.dataset.key;
+    const baseText = th.getAttribute("data-label")
+      || th.textContent.replace(/[↑↓↕]\s*$/, "").trim();
+
     th.setAttribute("data-label", baseText);
 
     if (key === sortKey) th.textContent = `${baseText} ${sortAsc ? "↑" : "↓"}`;
     else th.textContent = `${baseText} ↕`;
   });
 }
-
-document.querySelectorAll("th.sortable").forEach(th => {
-  th.addEventListener("click", () => {
-    const key = th.getAttribute("data-key");
-    sortBy(key);
-  });
-});
 
 /** ========= Toggle A/B ========= */
 btnToggleAB.addEventListener("click", () => {
@@ -338,6 +417,12 @@ btnToggleAB.addEventListener("click", () => {
   renderHeader();
   renderTable();
   updateSortIcons();
+
+  // 沒資料時維持提示 colspan 正確
+  if (exportRows.length === 0) {
+    tableBody.innerHTML =
+      `<tr><td colspan="${colCountNow()}" style="text-align:center;color:#666;">目前沒有「已送出」資料</td></tr>`;
+  }
 });
 
 /** ========= CSV export ========= */
@@ -347,15 +432,14 @@ btnExport.addEventListener("click", () => {
     return;
   }
 
+  // ✅ CSV：永遠匯出 AB + (A+B)（不用依 showAB）
   const headers = [
     "姓名","科室","職稱",
-    ...(showAB ? [
-      "化糞池處理A","化糞池處理B",
-      "政策與法規A","政策與法規B",
-      "施工與技術A","施工與技術B",
-      "接管流程與期限A","接管流程與期限B",
-      "費用與補助A","費用與補助B",
-    ] : []),
+    "化糞池處理A","化糞池處理B",
+    "政策與法規A","政策與法規B",
+    "施工與技術A","施工與技術B",
+    "接管流程與期限A","接管流程與期限B",
+    "費用與補助A","費用與補助B",
     "化糞池處理(A+B)","政策與法規(A+B)","施工與技術(A+B)","接管流程與期限(A+B)","費用與補助(A+B)",
     "化糞池處理評語","政策與法規評語","施工與技術評語","接管流程與期限評語","費用與補助評語",
     "總分","送出時間"
@@ -363,13 +447,11 @@ btnExport.addEventListener("click", () => {
 
   const rows = exportRows.map(r => ([
     r.name, r.dept, r.title,
-    ...(showAB ? [
-      r["化糞池處理_A"] ?? "", r["化糞池處理_B"] ?? "",
-      r["政策與法規_A"] ?? "", r["政策與法規_B"] ?? "",
-      r["施工與技術_A"] ?? "", r["施工與技術_B"] ?? "",
-      r["接管流程與期限_A"] ?? "", r["接管流程與期限_B"] ?? "",
-      r["費用與補助_A"] ?? "", r["費用與補助_B"] ?? "",
-    ] : []),
+    r["化糞池處理_A"] ?? "", r["化糞池處理_B"] ?? "",
+    r["政策與法規_A"] ?? "", r["政策與法規_B"] ?? "",
+    r["施工與技術_A"] ?? "", r["施工與技術_B"] ?? "",
+    r["接管流程與期限_A"] ?? "", r["接管流程與期限_B"] ?? "",
+    r["費用與補助_A"] ?? "", r["費用與補助_B"] ?? "",
     r["化糞池處理"] ?? "", r["政策與法規"] ?? "", r["施工與技術"] ?? "", r["接管流程與期限"] ?? "", r["費用與補助"] ?? "",
     r["化糞池處理_comment"] ?? "", r["政策與法規_comment"] ?? "", r["施工與技術_comment"] ?? "", r["接管流程與期限_comment"] ?? "", r["費用與補助_comment"] ?? "",
     r.total ?? "", r.time ?? ""
@@ -390,7 +472,6 @@ btnExport.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 </script>
-
 
 </body>
 </html>
