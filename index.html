@@ -99,6 +99,25 @@
       line-height: 1.6;
     }
 
+    /* ✅ 評分總覽：三格貼齊、等高 */
+    .sectionCard .grid2{
+      align-items: stretch;          /* 讓三格等高 */
+    }
+    
+    .sectionCard .grid2 > div{
+      background: #fff;              /* 小卡底色 */
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    /* ✅ 平均分那格不要自己撐高 */
+    .sectionCard .avgBox{
+      height: auto;
+    }
     .contentCard{
       white-space: pre-wrap;
       border: 1px solid #eee;
